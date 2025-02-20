@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from models import db, User, MediaAnalysis, Chat, Message
 import os
 from openai import OpenAI
+import json
 
 # Load environment variables
 load_dotenv()
@@ -51,9 +52,18 @@ SYSTEM_PROMPT_CHAT = """You are an expert media analysis assistant with deep kno
 Provide clear, actionable insights and always maintain context from previous messages.
 When appropriate, break down your responses into organized sections for better readability."""
 
+SYSTEM_PROMPT_SYNTHESIS = """You are an organizational analyst. Extract key information about the organization from the conversation and categorize it into:
+1. Organization Overview
+2. Key Projects
+3. Team Members
+4. Goals & Objectives
+5. Resources & Tools
+
+Return the information in JSON format with these categories. Only include information that has been explicitly mentioned or can be directly inferred."""
+
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -214,9 +224,68 @@ def get_chats():
         } for msg in chat.messages]
     } for chat in chats])
 
+@app.route('/synthesize', methods=['GET'])
+@login_required
+def synthesize_org_info():
+    try:
+        # Get all chats for the current user
+        chats = Chat.query.filter_by(user_id=current_user.id).all()
+        
+        print(f"Found {len(chats)} chats for user {current_user.id}")
+        
+        # Compile all messages into a conversation history
+        conversation_history = []
+        for chat in chats:
+            for message in chat.messages:
+                conversation_history.append(f"{message.role}: {message.content}")
+        
+        print(f"Compiled {len(conversation_history)} messages")
+        
+        # Don't make API call if there's no content
+        if not conversation_history:
+            return jsonify({
+                "success": True,
+                "org_info": {
+                    "Organization_Overview": "No information available yet",
+                    "Key_Projects": [],
+                    "Team_Members": [],
+                    "Goals_Objectives": [],
+                    "Resources_Tools": []
+                }
+            })
+        
+        # Send to OpenAI for synthesis
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": """You are an organizational analyst. Extract key information about the organization from the conversation and return it in this exact JSON format:
+{
+    "Organization_Overview": "Brief overview text",
+    "Key_Projects": ["project1", "project2", ...],
+    "Team_Members": ["member1", "member2", ...],
+    "Goals_Objectives": ["goal1", "goal2", ...],
+    "Resources_Tools": ["resource1", "resource2", ...]
+}
+Only include information that has been explicitly mentioned or can be directly inferred."""},
+                {"role": "user", "content": "\n".join(conversation_history)}
+            ]
+        )
+        
+        return jsonify({
+            "success": True,
+            "org_info": response.choices[0].message.content
+        })
+        
+    except Exception as e:
+        print(f"Error in synthesize_org_info: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 # Create database tables
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True, port=5001) 

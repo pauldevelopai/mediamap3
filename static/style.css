@@ -1,0 +1,8 @@
+/* Move all the CSS here from the previous file */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ... rest of your CSS ... */ 

@@ -5,23 +5,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Media Analysis AI</h1>
-        <div class="input-section">
-            <input type="text" id="mediaUrl" placeholder="Enter media URL">
-            <button onclick="analyzeMedia()">Analyze</button>
-        </div>
-        <div id="results" class="results-section">
-            <!-- Analysis results will appear here -->
+    <div class="main-container">
+        <!-- Add sidebar -->
+        <div class="sidebar" id="org-sidebar">
+            <h2>Organization Profile</h2>
+            <div class="sidebar-section">
+                <h3>Overview</h3>
+                <div id="org-overview"></div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Key Projects</h3>
+                <div id="org-projects"></div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Team Members</h3>
+                <div id="org-team"></div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Goals & Objectives</h3>
+                <div id="org-goals"></div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Resources & Tools</h3>
+                <div id="org-resources"></div>
+            </div>
+            <button onclick="updateOrgInfo()" class="refresh-btn">
+                Refresh Organization Info
+            </button>
         </div>
 
-        <!-- Add chat interface -->
-        <div class="chat-container">
-            <h2>Chat with AI Assistant</h2>
-            <div id="chat-messages" class="chat-messages"></div>
-            <div class="chat-input">
-                <input type="text" id="chat-input" placeholder="Type your message...">
-                <button onclick="sendMessage()">Send</button>
+        <!-- Existing content wrapped in content div -->
+        <div class="content">
+            <div class="container">
+                <h1>Media Analysis AI</h1>
+                <div class="input-section">
+                    <input type="text" id="mediaUrl" placeholder="Enter media URL">
+                    <button onclick="analyzeMedia()">Analyze</button>
+                </div>
+                <div id="results" class="results-section">
+                    <!-- Analysis results will appear here -->
+                </div>
+
+                <!-- Add chat interface -->
+                <div class="chat-container">
+                    <h2>Chat with AI Assistant</h2>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Type your message...">
+                        <button onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -122,8 +155,50 @@
             });
         }
 
-        // Load chat history when page loads
-        document.addEventListener('DOMContentLoaded', loadChatHistory);
+        function updateOrgInfo() {
+            fetch('/synthesize')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const orgInfo = JSON.parse(data.org_info);
+                        
+                        // Update each section
+                        document.getElementById('org-overview').innerHTML = 
+                            formatSection(orgInfo.Organization_Overview);
+                        document.getElementById('org-projects').innerHTML = 
+                            formatSection(orgInfo.Key_Projects);
+                        document.getElementById('org-team').innerHTML = 
+                            formatSection(orgInfo.Team_Members);
+                        document.getElementById('org-goals').innerHTML = 
+                            formatSection(orgInfo.Goals_Objectives);
+                        document.getElementById('org-resources').innerHTML = 
+                            formatSection(orgInfo.Resources_Tools);
+                    } else {
+                        console.error('Error updating organization info:', data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function formatSection(content) {
+            if (Array.isArray(content)) {
+                return '<ul>' + content.map(item => `<li>${item}</li>`).join('') + '</ul>';
+            }
+            return content;
+        }
+
+        // Update org info after each chat message
+        const originalSendMessage = sendMessage;
+        sendMessage = async function() {
+            await originalSendMessage();
+            updateOrgInfo();
+        };
+
+        // Initial load of org info
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChatHistory();
+            updateOrgInfo();
+        });
     </script>
 </body>
 </html>
@@ -219,5 +294,64 @@ button:hover {
 
 .chat-input button {
     padding: 10px 20px;
+}
+
+.main-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 20px;
+}
+
+.content {
+    flex: 1;
+    min-width: 0; /* Prevents flex item from overflowing */
+}
+
+.sidebar {
+    width: 300px;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    height: calc(100vh - 40px);
+    position: sticky;
+    top: 20px;
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    margin-bottom: 20px;
+}
+
+.sidebar-section h3 {
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.sidebar ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.sidebar li {
+    margin-bottom: 5px;
+}
+
+.refresh-btn {
+    width: 100%;
+    padding: 8px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.refresh-btn:hover {
+    background-color: #5a6268;
 }
 </style> 
