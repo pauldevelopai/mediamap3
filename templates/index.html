@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Analysis AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Media Analysis AI</h1>
+        <div class="input-section">
+            <input type="text" id="mediaUrl" placeholder="Enter media URL">
+            <button onclick="analyzeMedia()">Analyze</button>
+        </div>
+        <div id="results" class="results-section">
+            <!-- Analysis results will appear here -->
+        </div>
+    </div>
+
+    <script>
+        function analyzeMedia() {
+            const mediaUrl = document.getElementById('mediaUrl').value;
+            const results = document.getElementById('results');
+            
+            results.innerHTML = 'Analyzing...';
+            
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ media_url: mediaUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    results.innerHTML = `<pre>${data.analysis}</pre>`;
+                } else {
+                    results.innerHTML = `Error: ${data.error}`;
+                }
+            })
+            .catch(error => {
+                results.innerHTML = `Error: ${error}`;
+            });
+        }
+    </script>
+</body>
+</html>
+
+<style>
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.input-section {
+    margin: 20px 0;
+}
+
+input[type="text"] {
+    width: 70%;
+    padding: 10px;
+    margin-right: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.results-section {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+</style> 
