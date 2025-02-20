@@ -14,6 +14,16 @@
         <div id="results" class="results-section">
             <!-- Analysis results will appear here -->
         </div>
+
+        <!-- Add chat interface -->
+        <div class="chat-container">
+            <h2>Chat with AI Assistant</h2>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="Type your message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -42,6 +52,78 @@
                 results.innerHTML = `Error: ${error}`;
             });
         }
+
+        let currentChatId = null;
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            appendMessage('user', message);
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    chat_id: currentChatId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentChatId = data.chat_id;
+                    appendMessage('assistant', data.response);
+                } else {
+                    appendMessage('error', `Error: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                appendMessage('error', `Error: ${error}`);
+            });
+        }
+
+        function appendMessage(role, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.innerHTML = `<p>${content}</p>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add event listener for Enter key
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Add function to load chat history
+        function loadChatHistory() {
+            fetch('/chats')
+            .then(response => response.json())
+            .then(chats => {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = '';
+                
+                if (chats.length > 0) {
+                    const latestChat = chats[chats.length - 1];
+                    currentChatId = latestChat.id;
+                    
+                    latestChat.messages.forEach(msg => {
+                        appendMessage(msg.role, msg.content);
+                    });
+                }
+            });
+        }
+
+        // Load chat history when page loads
+        document.addEventListener('DOMContentLoaded', loadChatHistory);
     </script>
 </body>
 </html>
@@ -80,5 +162,62 @@ button:hover {
     padding: 20px;
     border: 1px solid #ddd;
     border-radius: 5px;
+}
+
+.chat-container {
+    margin-top: 30px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+}
+
+.chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+}
+
+.message {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+}
+
+.assistant-message {
+    background-color: #e9ecef;
+    color: black;
+    margin-right: auto;
+}
+
+.error-message {
+    background-color: #dc3545;
+    color: white;
+    margin-right: auto;
+}
+
+.chat-input {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.chat-input button {
+    padding: 10px 20px;
 }
 </style> 
