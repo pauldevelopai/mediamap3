@@ -405,6 +405,51 @@ def complete_lesson(lesson_id):
 def lessons_page():
     return render_template('lessons.html')
 
+@app.route('/lessons/create', methods=['POST'])
+@login_required
+def create_new_lesson():
+    try:
+        # Generate new lesson using OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": """You are an AI workflow expert creating a lesson plan.
+                Create a lesson about implementing AI in workflows. Include:
+                1. A clear title
+                2. The main lesson content with practical examples
+                3. An exercise for practice
+                4. Key takeaways
+                Format in markdown."""},
+                {"role": "user", "content": "Generate a new lesson about AI workflows"}
+            ]
+        )
+        
+        lesson_content = response.choices[0].message.content
+        
+        # Create new lesson
+        new_lesson = Lesson(
+            title=f"Lesson {Lesson.query.count() + 1}",
+            content=lesson_content,
+            order=Lesson.query.count() + 1
+        )
+        db.session.add(new_lesson)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "lesson": {
+                "id": new_lesson.id,
+                "title": new_lesson.title,
+                "content": new_lesson.content
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 # Create database tables
 with app.app_context():
     db.create_all()

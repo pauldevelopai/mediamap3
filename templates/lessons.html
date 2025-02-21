@@ -11,7 +11,13 @@
     </div>
     
     <div class="lessons-container">
-        <h1>Daily AI Workflow Lessons</h1>
+        <div class="lessons-header">
+            <h1>Daily AI Workflow Lessons</h1>
+            <button onclick="createNewLesson()" class="create-lesson-btn">
+                Create New Lesson
+            </button>
+        </div>
+        
         <div class="lessons-tab" id="lessons-panel">
             <div id="current-lesson">
                 <div id="lesson-content"></div>
@@ -57,6 +63,27 @@
                 }
             })
             .catch(error => console.error('Error completing lesson:', error));
+        }
+
+        function createNewLesson() {
+            const createBtn = document.querySelector('.create-lesson-btn');
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating...';
+            
+            fetch('/lessons/create', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadLesson();  // Load the newly created lesson
+                }
+            })
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create New Lesson';
+            });
         }
 
         // Load lesson when page loads

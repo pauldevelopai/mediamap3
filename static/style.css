@@ -313,4 +313,32 @@ button:hover {
 
 .refresh-btn:hover {
     background-color: #218838;
+}
+
+.lessons-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.create-lesson-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.create-lesson-btn:hover {
+    background-color: #218838;
+}
+
+.create-lesson-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 } 

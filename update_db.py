@@ -7,7 +7,7 @@ print("Current database location:", app.config['SQLALCHEMY_DATABASE_URI'])
 with app.app_context():
     # This will add new tables while preserving existing ones
     db.create_all()
-    print("Database updated with new lesson tables and organization info table!")
+    print("Database updated with lesson tables!")
     
     # Verify the tables were created
     inspector = inspect(db.engine)
