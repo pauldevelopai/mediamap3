@@ -596,7 +596,7 @@ def translate_text():
             user_id=current_user.id,
             original_text=text,
             translated_text=translated_text,
-            source_language='auto',  # GPT-4 will auto-detect
+            source_language='auto',
             target_language=target_language
         )
         db.session.add(translation)
@@ -604,11 +604,42 @@ def translate_text():
         
         return jsonify({
             "success": True,
-            "translation": translated_text
+            "translation": translated_text,
+            "translation_id": translation.id
         })
         
     except Exception as e:
         print(f"Error in translation: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/rate-translation', methods=['POST'])
+@login_required
+def rate_translation():
+    try:
+        data = request.json
+        translation_id = data.get('translation_id')
+        rating = data.get('rating')
+        
+        translation = Translation.query.get(translation_id)
+        if translation and translation.user_id == current_user.id:
+            translation.rating = rating
+            db.session.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Rating saved successfully"
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": "Translation not found"
+        }), 404
+        
+    except Exception as e:
+        print(f"Error rating translation: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)

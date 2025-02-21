@@ -77,4 +77,5 @@ class Translation(db.Model):
     translated_text = db.Column(db.Text, nullable=False)
     source_language = db.Column(db.String(10))
     target_language = db.Column(db.String(10))
+    rating = db.Column(db.Integer)  # Store user rating 1-10
     created_at = db.Column(db.DateTime, default=datetime.utcnow) 

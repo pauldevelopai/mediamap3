@@ -395,4 +395,31 @@ button:hover {
 
 .translation-box button:hover {
     background-color: #0256b4;
+}
+
+.rating-section {
+    margin-top: 20px;
+    padding: 15px;
+    border-top: 1px solid #e1e4e8;
+}
+
+.rating-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.rating-buttons button {
+    padding: 8px 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rating-buttons button:hover {
+    background: #0366d6;
+    color: white;
 } 
