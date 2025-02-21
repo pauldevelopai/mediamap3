@@ -1,8 +1,316 @@
-/* Move all the CSS here from the previous file */
+/* Modern CSS Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f7fa;
+}
+
+/* Main Layout */
+.main-container {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    gap: 24px;
+}
+
+/* Navigation */
+.nav-links {
+    padding: 16px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.nav-link {
+    display: inline-block;
+    padding: 8px 16px;
+    color: #0366d6;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+    background-color: #f1f8ff;
+    text-decoration: none;
+}
+
+/* Content Area */
+.content {
+    flex: 1;
+    min-width: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 24px;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #24292e;
+    margin-bottom: 24px;
+}
+
+/* Input Section */
+.input-section {
+    margin: 20px 0;
+}
+
+input[type="text"] {
+    width: 70%;
+    padding: 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #0366d6;
+    box-shadow: 0 0 0 3px rgba(3,102,214,0.1);
+}
+
+button {
+    padding: 12px 20px;
+    background-color: #0366d6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0256b4;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 320px;
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    height: calc(100vh - 40px);
+    position: sticky;
+    top: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #24292e;
+    margin-bottom: 16px;
+}
+
+.sidebar-section {
+    margin-bottom: 24px;
+}
+
+.sidebar-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #586069;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.sidebar li {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #444d56;
+}
+
+/* Chat Messages */
+.chat-messages {
+    background: #f6f8fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.message {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    max-width: 85%;
+}
+
+.user-message {
+    background-color: #0366d6;
+    color: white;
+    margin-left: auto;
+}
+
+.assistant-message {
+    background-color: white;
+    border: 1px solid #e1e4e8;
+    margin-right: auto;
+}
+
+.error-message {
+    background-color: #ffdce0;
+    color: #86181d;
+    border: 1px solid #f97583;
+}
+
+/* Results Section */
+.results-section {
+    margin-top: 20px;
+    padding: 16px;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    background: #f6f8fa;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+    }
+    
+    input[type="text"] {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+}
+
 .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
 }
 
-/* ... rest of your CSS ... */ 
+/* ... rest of your CSS ... */
+
+.lessons-tab {
+    flex: 1;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    margin: 20px;
+    max-width: 800px;
+}
+
+#lesson-content {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+#lesson-content h1,
+#lesson-content h2,
+#lesson-content h3 {
+    color: #2c3e50;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+#lesson-content ul,
+#lesson-content ol {
+    padding-left: 20px;
+    margin-bottom: 1em;
+}
+
+.lesson-btn {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.lesson-btn:hover {
+    background-color: #218838;
+}
+
+.lesson-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.nav-bar {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.nav-link:hover {
+    text-decoration: underline;
+}
+
+.lessons-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.sidebar-sections {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-footer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e1e4e8;
+}
+
+.refresh-btn {
+    width: 100%;
+    background-color: #28a745;
+}
+
+.refresh-btn:hover {
+    background-color: #218838;
+} 

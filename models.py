@@ -34,4 +34,28 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    chat = db.relationship('Chat', backref=db.backref('messages', lazy=True, order_by='Message.created_at')) 
+    chat = db.relationship('Chat', backref=db.backref('messages', lazy=True, order_by='Message.created_at'))
+
+class Lesson(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserLesson(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
+
+class OrganizationInfo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    overview = db.Column(db.Text)
+    key_projects = db.Column(db.Text)  # Store as JSON string
+    team_members = db.Column(db.Text)  # Store as JSON string
+    goals = db.Column(db.Text)  # Store as JSON string
+    resources = db.Column(db.Text)  # Store as JSON string
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow) 

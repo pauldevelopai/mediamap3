@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Workflow Lessons</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="/" class="nav-link">Back to Chat</a>
+    </div>
+    
+    <div class="lessons-container">
+        <h1>Daily AI Workflow Lessons</h1>
+        <div class="lessons-tab" id="lessons-panel">
+            <div id="current-lesson">
+                <div id="lesson-content"></div>
+                <button id="complete-lesson" onclick="completeLesson()" class="lesson-btn">
+                    Mark as Complete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLessonId = null;
+
+        function loadLesson() {
+            fetch('/lessons')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentLessonId = data.lesson.id;
+                        const lessonContent = document.getElementById('lesson-content');
+                        lessonContent.innerHTML = marked.parse(data.lesson.content);
+                        
+                        // Update button state
+                        const completeBtn = document.getElementById('complete-lesson');
+                        completeBtn.disabled = data.lesson.completed;
+                        completeBtn.textContent = data.lesson.completed ? 
+                            'Completed' : 'Mark as Complete';
+                    }
+                })
+                .catch(error => console.error('Error loading lesson:', error));
+        }
+
+        function completeLesson() {
+            if (!currentLessonId) return;
+            
+            fetch(`/lessons/complete/${currentLessonId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadLesson(); // Load next lesson
+                }
+            })
+            .catch(error => console.error('Error completing lesson:', error));
+        }
+
+        // Load lesson when page loads
+        document.addEventListener('DOMContentLoaded', loadLesson);
+    </script>
+</body>
+</html> 

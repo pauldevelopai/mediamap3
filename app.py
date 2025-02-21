@@ -2,10 +2,11 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from models import db, User, MediaAnalysis, Chat, Message
+from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo
 import os
 from openai import OpenAI
 import json
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -228,10 +229,27 @@ def get_chats():
 @login_required
 def synthesize_org_info():
     try:
+        # Check if we should refresh
+        should_refresh = request.args.get('refresh', 'false') == 'true'
+        
+        # Try to get existing org info
+        org_info = OrganizationInfo.query.filter_by(user_id=current_user.id).first()
+        
+        # Return existing info if it exists and we're not refreshing
+        if org_info and not should_refresh:
+            return jsonify({
+                "success": True,
+                "org_info": {
+                    "Organization_Overview": org_info.overview,
+                    "Key_Projects": json.loads(org_info.key_projects or '[]'),
+                    "Team_Members": json.loads(org_info.team_members or '[]'),
+                    "Goals_Objectives": json.loads(org_info.goals or '[]'),
+                    "Resources_Tools": json.loads(org_info.resources or '[]')
+                }
+            })
+        
         # Get all chats for the current user
         chats = Chat.query.filter_by(user_id=current_user.id).all()
-        
-        print(f"Found {len(chats)} chats for user {current_user.id}")
         
         # Compile all messages into a conversation history
         conversation_history = []
@@ -239,22 +257,17 @@ def synthesize_org_info():
             for message in chat.messages:
                 conversation_history.append(f"{message.role}: {message.content}")
         
-        print(f"Compiled {len(conversation_history)} messages")
-        
-        # Don't make API call if there's no content
         if not conversation_history:
-            return jsonify({
-                "success": True,
-                "org_info": {
-                    "Organization_Overview": "No information available yet",
-                    "Key_Projects": [],
-                    "Team_Members": [],
-                    "Goals_Objectives": [],
-                    "Resources_Tools": []
-                }
-            })
+            default_info = {
+                "Organization_Overview": "No information available yet",
+                "Key_Projects": [],
+                "Team_Members": [],
+                "Goals_Objectives": [],
+                "Resources_Tools": []
+            }
+            return jsonify({"success": True, "org_info": default_info})
         
-        # Send to OpenAI for synthesis
+        # Get synthesis from OpenAI
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -271,9 +284,26 @@ Only include information that has been explicitly mentioned or can be directly i
             ]
         )
         
+        # Parse the response
+        synthesis = json.loads(response.choices[0].message.content)
+        
+        # Update or create org info in database
+        if not org_info:
+            org_info = OrganizationInfo(user_id=current_user.id)
+            db.session.add(org_info)
+        
+        org_info.overview = synthesis["Organization_Overview"]
+        org_info.key_projects = json.dumps(synthesis["Key_Projects"])
+        org_info.team_members = json.dumps(synthesis["Team_Members"])
+        org_info.goals = json.dumps(synthesis["Goals_Objectives"])
+        org_info.resources = json.dumps(synthesis["Resources_Tools"])
+        org_info.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
         return jsonify({
             "success": True,
-            "org_info": response.choices[0].message.content
+            "org_info": synthesis
         })
         
     except Exception as e:
@@ -282,6 +312,98 @@ Only include information that has been explicitly mentioned or can be directly i
             "success": False,
             "error": str(e)
         }), 500
+
+@app.route('/lessons')
+@login_required
+def get_lessons():
+    try:
+        # Get user's lesson progress
+        user_lessons = UserLesson.query.filter_by(user_id=current_user.id).all()
+        completed_lessons = {ul.lesson_id for ul in user_lessons if ul.completed}
+        
+        # Get current lesson or next available
+        current_lesson = Lesson.query.filter(
+            ~Lesson.id.in_(completed_lessons)
+        ).order_by(Lesson.order).first()
+        
+        if not current_lesson:
+            # Generate new lesson using OpenAI
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": """You are an AI workflow expert creating a lesson plan.
+                    Create a lesson about implementing AI in workflows. Include:
+                    1. A clear title
+                    2. The main lesson content with practical examples
+                    3. An exercise for practice
+                    4. Key takeaways
+                    Format in markdown."""},
+                    {"role": "user", "content": "Generate a new lesson about AI workflows"}
+                ]
+            )
+            
+            lesson_content = response.choices[0].message.content
+            
+            # Create new lesson
+            new_lesson = Lesson(
+                title=f"Lesson {Lesson.query.count() + 1}",
+                content=lesson_content,
+                order=Lesson.query.count() + 1
+            )
+            db.session.add(new_lesson)
+            db.session.commit()
+            
+            current_lesson = new_lesson
+        
+        return jsonify({
+            "success": True,
+            "lesson": {
+                "id": current_lesson.id,
+                "title": current_lesson.title,
+                "content": current_lesson.content,
+                "completed": current_lesson.id in completed_lessons
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in get_lessons: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/lessons/complete/<int:lesson_id>', methods=['POST'])
+@login_required
+def complete_lesson(lesson_id):
+    try:
+        user_lesson = UserLesson.query.filter_by(
+            user_id=current_user.id,
+            lesson_id=lesson_id
+        ).first()
+        
+        if not user_lesson:
+            user_lesson = UserLesson(
+                user_id=current_user.id,
+                lesson_id=lesson_id
+            )
+            db.session.add(user_lesson)
+        
+        user_lesson.completed = True
+        user_lesson.last_accessed = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"success": True})
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/lessons-page')
+@login_required
+def lessons_page():
+    return render_template('lessons.html')
 
 # Create database tables
 with app.app_context():

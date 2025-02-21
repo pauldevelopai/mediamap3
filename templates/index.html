@@ -6,35 +6,44 @@
 </head>
 <body>
     <div class="main-container">
+        <!-- Add nav link at the top -->
+        <div class="nav-links">
+            <a href="/lessons-page" class="nav-link">View Daily Lessons</a>
+        </div>
+
         <!-- Add sidebar -->
         <div class="sidebar" id="org-sidebar">
             <h2>Organization Profile</h2>
-            <div class="sidebar-section">
-                <h3>Overview</h3>
-                <div id="org-overview"></div>
+            <div class="sidebar-sections">
+                <div class="sidebar-section">
+                    <h3>Overview</h3>
+                    <div id="org-overview"></div>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Key Projects</h3>
+                    <div id="org-projects"></div>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Team Members</h3>
+                    <div id="org-team"></div>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Goals & Objectives</h3>
+                    <div id="org-goals"></div>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Resources & Tools</h3>
+                    <div id="org-resources"></div>
+                </div>
             </div>
-            <div class="sidebar-section">
-                <h3>Key Projects</h3>
-                <div id="org-projects"></div>
+            <div class="sidebar-footer">
+                <button onclick="updateOrgInfo(true)" class="refresh-btn">
+                    Refresh Organization Info
+                </button>
             </div>
-            <div class="sidebar-section">
-                <h3>Team Members</h3>
-                <div id="org-team"></div>
-            </div>
-            <div class="sidebar-section">
-                <h3>Goals & Objectives</h3>
-                <div id="org-goals"></div>
-            </div>
-            <div class="sidebar-section">
-                <h3>Resources & Tools</h3>
-                <div id="org-resources"></div>
-            </div>
-            <button onclick="updateOrgInfo()" class="refresh-btn">
-                Refresh Organization Info
-            </button>
         </div>
 
-        <!-- Existing content wrapped in content div -->
+        <!-- Main content remains -->
         <div class="content">
             <div class="container">
                 <h1>Media Analysis AI</h1>
@@ -155,24 +164,23 @@
             });
         }
 
-        function updateOrgInfo() {
-            fetch('/synthesize')
+        function updateOrgInfo(refresh = false) {
+            const url = refresh ? '/synthesize?refresh=true' : '/synthesize';
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        const orgInfo = JSON.parse(data.org_info);
-                        
                         // Update each section
                         document.getElementById('org-overview').innerHTML = 
-                            formatSection(orgInfo.Organization_Overview);
+                            formatSection(data.org_info.Organization_Overview);
                         document.getElementById('org-projects').innerHTML = 
-                            formatSection(orgInfo.Key_Projects);
+                            formatSection(data.org_info.Key_Projects);
                         document.getElementById('org-team').innerHTML = 
-                            formatSection(orgInfo.Team_Members);
+                            formatSection(data.org_info.Team_Members);
                         document.getElementById('org-goals').innerHTML = 
-                            formatSection(orgInfo.Goals_Objectives);
+                            formatSection(data.org_info.Goals_Objectives);
                         document.getElementById('org-resources').innerHTML = 
-                            formatSection(orgInfo.Resources_Tools);
+                            formatSection(data.org_info.Resources_Tools);
                     } else {
                         console.error('Error updating organization info:', data.error);
                     }
@@ -353,5 +361,22 @@ button:hover {
 
 .refresh-btn:hover {
     background-color: #5a6268;
+}
+
+.nav-links {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.nav-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.nav-link:hover {
+    text-decoration: underline;
 }
 </style> 
