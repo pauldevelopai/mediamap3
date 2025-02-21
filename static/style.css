@@ -422,4 +422,15 @@ button:hover {
 .rating-buttons button:hover {
     background: #0366d6;
     color: white;
+}
+
+.model-info {
+    background: #f6f8fa;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    color: #586069;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #e1e4e8;
 } 
