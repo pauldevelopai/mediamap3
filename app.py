@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback
+from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback, Location
 import os
 from openai import OpenAI
 import json
@@ -684,6 +684,53 @@ def submit_correction():
         
     except Exception as e:
         print(f"Error submitting correction: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/add-location', methods=['POST'])
+@login_required
+def add_location():
+    try:
+        data = request.json
+        new_location = Location(
+            user_id=current_user.id,
+            name=data['name'],
+            description=data.get('description', '')
+        )
+        db.session.add(new_location)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Location added successfully"
+        })
+        
+    except Exception as e:
+        print(f"Error adding location: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/get-locations')
+@login_required
+def get_locations():
+    try:
+        locations = Location.query.filter_by(user_id=current_user.id).all()
+        return jsonify({
+            "success": True,
+            "locations": [{
+                "name": loc.name,
+                "latitude": loc.latitude,
+                "longitude": loc.longitude,
+                "description": loc.description
+            } for loc in locations]
+        })
+        
+    except Exception as e:
+        print(f"Error getting locations: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)

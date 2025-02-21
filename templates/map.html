@@ -1,48 +1,139 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User Map - Media Analysis AI</title>
+    <title>World Map</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <style>
-        #map {
-            height: 600px;
-            width: 100%;
-            border-radius: 12px;
-        }
-    </style>
 </head>
 <body>
     <div class="nav-bar">
         <a href="/" class="nav-link">Back to Chat</a>
     </div>
-    
-    <div class="container">
-        <h1>User Locations</h1>
-        <div id="map"></div>
+
+    <!-- Add Location Form -->
+    <div class="location-form">
+        <h3>Add Location</h3>
+        <div class="input-group">
+            <input type="text" id="location-name" placeholder="Location name">
+            <input type="text" id="description" placeholder="Description">
+            <button onclick="addLocation()">Add to Map</button>
+        </div>
     </div>
 
+    <div id="map"></div>
+
     <script>
-        // Initialize the map
-        const map = L.map('map').setView([0, 0], 2);
-        
-        // Add OpenStreetMap tiles
+        var map = L.map('map').setView([0, 0], 2);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Fetch and display user locations
-        fetch('/api/user-locations')
+        // Load existing locations
+        fetch('/get-locations')
             .then(response => response.json())
             .then(data => {
-                data.users.forEach(user => {
-                    L.marker([user.latitude, user.longitude])
-                        .bindPopup(user.username + '<br>' + user.location_name)
-                        .addTo(map);
+                data.locations.forEach(location => {
+                    addMarker(location);
                 });
             });
+
+        function addLocation() {
+            const name = document.getElementById('location-name').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (name) {
+                // Use a geocoding service to get coordinates
+                fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(name)}&key=YOUR_API_KEY`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'OK') {
+                            const location = data.results[0].geometry.location;
+                            const newLocation = {
+                                name: name,
+                                latitude: location.lat,
+                                longitude: location.lng,
+                                description: description
+                            };
+
+                            fetch('/add-location', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(newLocation)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    addMarker(newLocation);
+                                    // Clear form
+                                    document.getElementById('location-name').value = '';
+                                    document.getElementById('description').value = '';
+                                }
+                            });
+                        } else {
+                            alert('Location not found. Please try a different name.');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        }
+
+        function addMarker(location) {
+            const marker = L.marker([location.latitude, location.longitude]).addTo(map);
+            marker.bindPopup(`<b>${location.name}</b><br>${location.description || ''}`);
+        }
+
+        // Add click event to map to get coordinates
+        map.on('click', function(e) {
+            document.getElementById('latitude').value = e.latlng.lat.toFixed(6);
+            document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+        });
     </script>
+
+    <style>
+        #map {
+            height: calc(100vh - 180px);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .location-form {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .input-group button {
+            padding: 8px 16px;
+            background-color: #0366d6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .input-group button:hover {
+            background-color: #0256b4;
+        }
+    </style>
 </body>
 </html> 

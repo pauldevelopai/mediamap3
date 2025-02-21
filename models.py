@@ -87,4 +87,11 @@ class TranslationFeedback(db.Model):
     corrected_text = db.Column(db.Text, nullable=False)
     source_language = db.Column(db.String(10))
     target_language = db.Column(db.String(10))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Location(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow) 

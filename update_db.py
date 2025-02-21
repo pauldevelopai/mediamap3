@@ -1,10 +1,14 @@
 from app import app, db
-from models import User, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback
+from models import User, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback, Location
 from sqlalchemy import inspect, text
 
 print("Current database location:", app.config['SQLALCHEMY_DATABASE_URI'])
 
 with app.app_context():
+    db.drop_all()  # Drop all tables to reset
+    db.create_all()  # Recreate tables with updated schema
+    print("Database updated with new location schema!")
+
     # Add new columns to User table
     inspector = inspect(db.engine)
     columns = [col['name'] for col in inspector.get_columns('user')]
@@ -57,4 +61,10 @@ with app.app_context():
     # Check translation feedback table columns
     if 'translation_feedback' in existing_tables:
         columns = [col['name'] for col in inspector.get_columns('translation_feedback')]
-        print("\nTranslation feedback table columns:", columns) 
+        print("\nTranslation feedback table columns:", columns)
+
+    print("Database updated with location table!")
+    
+    inspector = inspect(db.engine)
+    existing_tables = inspector.get_table_names()
+    print("\nExisting tables:", existing_tables) 
