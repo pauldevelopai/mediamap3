@@ -47,4 +47,14 @@ with app.app_context():
 
     print("Database updated with translation rating column!")
 
-    print("Database updated with translation feedback table!") 
+    print("Database updated with translation feedback table!")
+
+    # Check translation table columns
+    if 'translation' in existing_tables:
+        columns = [col['name'] for col in inspector.get_columns('translation')]
+        print("\nTranslation table columns:", columns)
+    
+    # Check translation feedback table columns
+    if 'translation_feedback' in existing_tables:
+        columns = [col['name'] for col in inspector.get_columns('translation_feedback')]
+        print("\nTranslation feedback table columns:", columns) 
