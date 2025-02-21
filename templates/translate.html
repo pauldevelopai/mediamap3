@@ -130,6 +130,7 @@
             
             <div class="output-group">
                 <textarea id="translated-text" readonly placeholder="Translation will appear here"></textarea>
+                
                 <div class="rating-section" style="display: none;">
                     <h4>Rate this translation:</h4>
                     <div class="rating-buttons">
@@ -144,6 +145,12 @@
                         <button onclick="rateTranslation(9)">9</button>
                         <button onclick="rateTranslation(10)">10</button>
                     </div>
+                </div>
+
+                <div class="feedback-section" style="display: none;">
+                    <h4>Help improve the translation:</h4>
+                    <textarea id="corrected-text" placeholder="Enter the corrected translation here"></textarea>
+                    <button onclick="submitCorrection()">Submit Correction</button>
                 </div>
             </div>
         </div>
@@ -171,8 +178,13 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('translated-text').value = data.translation;
+                        document.getElementById('corrected-text').value = data.translation;
                         currentTranslationId = data.translation_id;
                         document.querySelector('.rating-section').style.display = 'block';
+                        document.querySelector('.feedback-section').style.display = 'block';
+                        document.querySelectorAll('.rating-buttons button').forEach(button => {
+                            button.classList.remove('selected');
+                        });
                     }
                 })
                 .catch(error => console.error('Error:', error));
@@ -194,13 +206,45 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        document.querySelectorAll('.rating-buttons button').forEach(button => {
+                            button.classList.remove('selected');
+                        });
+                        document.querySelector(`.rating-buttons button:nth-child(${rating})`).classList.add('selected');
                         alert('Rating saved! Thank you for your feedback.');
-                        document.querySelector('.rating-section').style.display = 'none';
                     }
                 })
                 .catch(error => console.error('Error:', error));
             }
         }
+
+        function submitCorrection() {
+            const correctedText = document.getElementById('corrected-text').value.trim();
+            
+            if (correctedText && currentTranslationId) {
+                fetch('/submit-correction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        translation_id: currentTranslationId,
+                        corrected_text: correctedText
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Thank you for your correction! This will help improve future translations.');
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.rating-section').style.display = 'none';
+            document.querySelector('.feedback-section').style.display = 'none';
+        });
     </script>
 </body>
 </html> 

@@ -1,5 +1,5 @@
 from app import app, db
-from models import User, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation
+from models import User, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback
 from sqlalchemy import inspect, text
 
 print("Current database location:", app.config['SQLALCHEMY_DATABASE_URI'])
@@ -45,4 +45,6 @@ with app.app_context():
     existing_tables = inspector.get_table_names()
     print("\nExisting tables:", existing_tables)
 
-    print("Database updated with translation rating column!") 
+    print("Database updated with translation rating column!")
+
+    print("Database updated with translation feedback table!") 

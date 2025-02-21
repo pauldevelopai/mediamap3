@@ -78,4 +78,13 @@ class Translation(db.Model):
     source_language = db.Column(db.String(10))
     target_language = db.Column(db.String(10))
     rating = db.Column(db.Integer)  # Store user rating 1-10
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TranslationFeedback(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    translation_id = db.Column(db.Integer, db.ForeignKey('translation.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    corrected_text = db.Column(db.Text, nullable=False)
+    source_language = db.Column(db.String(10))
+    target_language = db.Column(db.String(10))
     created_at = db.Column(db.DateTime, default=datetime.utcnow) 

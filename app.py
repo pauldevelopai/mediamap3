@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation
+from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation, TranslationFeedback
 import os
 from openai import OpenAI
 import json
@@ -649,6 +649,45 @@ def rate_translation():
 @login_required
 def translate_page():
     return render_template('translate.html')
+
+@app.route('/submit-correction', methods=['POST'])
+@login_required
+def submit_correction():
+    try:
+        data = request.json
+        translation_id = data.get('translation_id')
+        corrected_text = data.get('corrected_text')
+        
+        # Get original translation
+        translation = Translation.query.get(translation_id)
+        if translation and translation.user_id == current_user.id:
+            # Store the correction
+            feedback = TranslationFeedback(
+                translation_id=translation_id,
+                user_id=current_user.id,
+                corrected_text=corrected_text,
+                source_language=translation.source_language,
+                target_language=translation.target_language
+            )
+            db.session.add(feedback)
+            db.session.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Correction saved successfully"
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": "Translation not found"
+        }), 404
+        
+    except Exception as e:
+        print(f"Error submitting correction: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # Create database tables
 with app.app_context():
