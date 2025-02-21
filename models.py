@@ -10,6 +10,10 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Add location fields
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    location_name = db.Column(db.String(200))
     
     # Relationships
     analyses = db.relationship('MediaAnalysis', backref='user', lazy=True)
@@ -58,4 +62,19 @@ class OrganizationInfo(db.Model):
     team_members = db.Column(db.Text)  # Store as JSON string
     goals = db.Column(db.Text)  # Store as JSON string
     resources = db.Column(db.Text)  # Store as JSON string
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class OrganizationFact(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    fact = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Translation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    original_text = db.Column(db.Text, nullable=False)
+    translated_text = db.Column(db.Text, nullable=False)
+    source_language = db.Column(db.String(10))
+    target_language = db.Column(db.String(10))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) 

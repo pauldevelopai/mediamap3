@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Language Translation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="/" class="nav-link">Back to Chat</a>
+    </div>
+    
+    <div class="translation-container">
+        <h1>AI Language Translation</h1>
+        
+        <div class="translation-box">
+            <div class="input-group">
+                <textarea id="source-text" placeholder="Enter text to translate"></textarea>
+                <select id="target-language">
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                    <option value="German">German</option>
+                    <option value="Italian">Italian</option>
+                    <option value="Portuguese">Portuguese</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Russian">Russian</option>
+                    <option value="Arabic">Arabic</option>
+                </select>
+                <button onclick="translateText()">Translate</button>
+            </div>
+            
+            <div class="output-group">
+                <textarea id="translated-text" readonly placeholder="Translation will appear here"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function translateText() {
+            const sourceText = document.getElementById('source-text').value.trim();
+            const targetLanguage = document.getElementById('target-language').value;
+            
+            if (sourceText) {
+                fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: sourceText,
+                        target_language: targetLanguage
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('translated-text').value = data.translation;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+    </script>
+</body>
+</html> 

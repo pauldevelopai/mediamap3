@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Map - Media Analysis AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="/" class="nav-link">Back to Chat</a>
+    </div>
+    
+    <div class="container">
+        <h1>User Locations</h1>
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([0, 0], 2);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Fetch and display user locations
+        fetch('/api/user-locations')
+            .then(response => response.json())
+            .then(data => {
+                data.users.forEach(user => {
+                    L.marker([user.latitude, user.longitude])
+                        .bindPopup(user.username + '<br>' + user.location_name)
+                        .addTo(map);
+                });
+            });
+    </script>
+</body>
+</html> 

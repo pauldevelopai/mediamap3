@@ -341,4 +341,58 @@ button:hover {
 .create-lesson-btn:disabled {
     background-color: #6c757d;
     cursor: not-allowed;
+}
+
+.translation-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.translation-box {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.input-group, .output-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.translation-box textarea {
+    width: 100%;
+    height: 150px;
+    padding: 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    font-size: 16px;
+    resize: vertical;
+}
+
+.translation-box select {
+    padding: 8px;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.translation-box button {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background-color: #0366d6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.translation-box button:hover {
+    background-color: #0256b4;
 } 

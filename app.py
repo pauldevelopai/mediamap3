@@ -2,11 +2,13 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo
+from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, OrganizationInfo, OrganizationFact, Translation
 import os
 from openai import OpenAI
 import json
 from datetime import datetime
+import urllib.parse
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -152,7 +154,19 @@ def analyze_media():
 def chat():
     try:
         data = request.json
-        user_message = data.get('message')
+        message_content = data.get('message', '')
+        
+        # Check if this is a fact being shared
+        if "tell us facts about" in message_content.lower():
+            # Store as an organization fact
+            new_fact = OrganizationFact(
+                user_id=current_user.id,
+                fact=message_content
+            )
+            db.session.add(new_fact)
+            db.session.commit()
+        
+        # Continue with regular chat processing...
         chat_id = data.get('chat_id')
         
         # Get or create chat
@@ -170,7 +184,7 @@ def chat():
         user_msg = Message(
             chat_id=chat_id,
             role='user',
-            content=user_message
+            content=message_content
         )
         db.session.add(user_msg)
         
@@ -229,27 +243,12 @@ def get_chats():
 @login_required
 def synthesize_org_info():
     try:
-        # Check if we should refresh
-        should_refresh = request.args.get('refresh', 'false') == 'true'
-        
-        # Try to get existing org info
-        org_info = OrganizationInfo.query.filter_by(user_id=current_user.id).first()
-        
-        # Return existing info if it exists and we're not refreshing
-        if org_info and not should_refresh:
-            return jsonify({
-                "success": True,
-                "org_info": {
-                    "Organization_Overview": org_info.overview,
-                    "Key_Projects": json.loads(org_info.key_projects or '[]'),
-                    "Team_Members": json.loads(org_info.team_members or '[]'),
-                    "Goals_Objectives": json.loads(org_info.goals or '[]'),
-                    "Resources_Tools": json.loads(org_info.resources or '[]')
-                }
-            })
-        
         # Get all chats for the current user
         chats = Chat.query.filter_by(user_id=current_user.id).all()
+        
+        # Get all facts for this user
+        facts = OrganizationFact.query.filter_by(user_id=current_user.id).all()
+        facts_list = [fact.fact for fact in facts]
         
         # Compile all messages into a conversation history
         conversation_history = []
@@ -257,16 +256,45 @@ def synthesize_org_info():
             for message in chat.messages:
                 conversation_history.append(f"{message.role}: {message.content}")
         
-        if not conversation_history:
-            default_info = {
-                "Organization_Overview": "No information available yet",
-                "Key_Projects": [],
-                "Team_Members": [],
-                "Goals_Objectives": [],
-                "Resources_Tools": []
-            }
-            return jsonify({"success": True, "org_info": default_info})
+        # First, try to extract location information
+        location_response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": """You are a location data expert. Extract any location information from the conversation.
+                If found, return in this exact JSON format:
+                {
+                    "location_name": "City, Country",
+                    "found": true
+                }
+                If no location is found, return:
+                {
+                    "found": false
+                }
+                Only return locations that are explicitly mentioned as the user's or organization's location."""},
+                {"role": "user", "content": "\n".join(conversation_history)}
+            ]
+        )
         
+        location_data = json.loads(location_response.choices[0].message.content)
+        
+        # If location found and user doesn't have location set, get coordinates
+        if location_data.get("found", False) and not current_user.location_name:
+            # Use OpenStreetMap Nominatim API to get coordinates
+            location_name = location_data["location_name"]
+            encoded_location = urllib.parse.quote(location_name)
+            geocode_url = f"https://nominatim.openstreetmap.org/search?q={encoded_location}&format=json"
+            
+            response = requests.get(geocode_url, headers={'User-Agent': 'MediaAnalysisApp'})
+            if response.status_code == 200:
+                results = response.json()
+                if results:
+                    # Update user's location
+                    current_user.latitude = float(results[0]['lat'])
+                    current_user.longitude = float(results[0]['lon'])
+                    current_user.location_name = location_name
+                    db.session.commit()
+        
+        # Continue with regular organization info synthesis
         # Get synthesis from OpenAI
         response = client.chat.completions.create(
             model="gpt-4",
@@ -287,7 +315,11 @@ Only include information that has been explicitly mentioned or can be directly i
         # Parse the response
         synthesis = json.loads(response.choices[0].message.content)
         
+        # Add facts to the response
+        synthesis["Organization_Facts"] = facts_list
+        
         # Update or create org info in database
+        org_info = OrganizationInfo.query.filter_by(user_id=current_user.id).first()
         if not org_info:
             org_info = OrganizationInfo(user_id=current_user.id)
             db.session.add(org_info)
@@ -449,6 +481,143 @@ def create_new_lesson():
             "success": False,
             "error": str(e)
         }), 500
+
+@app.route('/map')
+@login_required
+def show_map():
+    return render_template('map.html')
+
+@app.route('/api/user-locations')
+@login_required
+def get_user_locations():
+    users = User.query.all()
+    return jsonify({
+        'users': [{
+            'username': user.username,
+            'latitude': user.latitude,
+            'longitude': user.longitude,
+            'location_name': user.location_name
+        } for user in users if user.latitude and user.longitude]
+    })
+
+@app.route('/update-location', methods=['POST'])
+@login_required
+def update_location():
+    data = request.json
+    current_user.latitude = data.get('latitude')
+    current_user.longitude = data.get('longitude')
+    current_user.location_name = data.get('location_name')
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/add-fact', methods=['POST'])
+@login_required
+def add_fact():
+    try:
+        data = request.json
+        fact_content = data.get('fact', '')
+        
+        # Store the fact
+        new_fact = OrganizationFact(
+            user_id=current_user.id,
+            fact=fact_content
+        )
+        db.session.add(new_fact)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Fact added successfully"
+        })
+        
+    except Exception as e:
+        print(f"Error adding fact: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/analyze-chat', methods=['POST'])
+@login_required
+def analyze_chat():
+    try:
+        data = request.json
+        message_content = data.get('message', '')
+        
+        # Get analysis from GPT-4
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": """You are a media analysis expert. 
+                Analyze the given content and provide insights about:
+                1. Key themes and topics
+                2. Potential implications
+                3. Recommendations
+                Format your response in clear sections."""},
+                {"role": "user", "content": message_content}
+            ]
+        )
+        
+        analysis = response.choices[0].message.content
+        
+        return jsonify({
+            "success": True,
+            "analysis": analysis
+        })
+        
+    except Exception as e:
+        print(f"Error generating analysis: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/translate', methods=['POST'])
+@login_required
+def translate_text():
+    try:
+        data = request.json
+        text = data.get('text', '')
+        target_language = data.get('target_language', '')
+        
+        # Get translation from GPT-4
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": f"You are a translator. Translate the following text to {target_language}. Only respond with the translation, no additional text."},
+                {"role": "user", "content": text}
+            ]
+        )
+        
+        translated_text = response.choices[0].message.content
+        
+        # Store translation
+        translation = Translation(
+            user_id=current_user.id,
+            original_text=text,
+            translated_text=translated_text,
+            source_language='auto',  # GPT-4 will auto-detect
+            target_language=target_language
+        )
+        db.session.add(translation)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "translation": translated_text
+        })
+        
+    except Exception as e:
+        print(f"Error in translation: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/translate')
+@login_required
+def translate_page():
+    return render_template('translate.html')
 
 # Create database tables
 with app.app_context():
