@@ -741,6 +741,11 @@ def get_locations():
 def recommended_ai_tools():
     return render_template('recommended_ai_tools.html')
 
+@app.route('/generate-insights')
+@login_required
+def generate_insights():
+    return render_template('generate_insights.html')
+
 # Create database tables
 with app.app_context():
     db.create_all()

@@ -13,6 +13,7 @@
                 <a href="/map" class="nav-link">World Map</a>
                 <a href="/translate" class="nav-link">Language Translation</a>
                 <a href="/recommended-ai-tools" class="nav-link">Recommended AI Tools</a>
+                <a href="/generate-insights" class="nav-link">Generate Insights</a>
                 <br>
                 <div class="sidebar-sections">
                     <div class="sidebar-section">
@@ -46,16 +47,6 @@
 
         <!-- Main content remains -->
         <div class="content">
-            <div class="container">
-                <h1>Tell us facts about you and your organisation</h1>
-                <div class="input-section">
-                    <input type="text" id="mediaUrl" placeholder="Enter fact here">
-                    <button onclick="analyzeMedia()">Add Fact</button>
-                </div>
-                <div id="results" class="results-section">
-                    <!-- Analysis results will appear here -->
-                </div>
-
                 <!-- Add chat interface -->
                 <div class="chat-container">
                     <h2>Chat with AI Assistant</h2>
@@ -68,20 +59,10 @@
 
                 <!-- Fact Input Section -->
                 <div class="input-section">
-                    <h3>Add Organization Fact</h3>
+                    <h3>Add fact about your organisation that we should know</h3>
                     <input type="text" id="fact-input" placeholder="Enter a fact about your organization">
                     <button onclick="addFact()">Add Fact</button>
                 </div>
-
-                <!-- Analysis Input Section -->
-                <div class="input-section">
-                    <h3>Generate Analysis & Insights</h3>
-                    <input type="text" id="analysis-input" placeholder="Enter text to analyze">
-                    <button onclick="generateAnalysis()">Generate Analysis</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script>
         function analyzeMedia() {
