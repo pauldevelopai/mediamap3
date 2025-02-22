@@ -13,40 +13,36 @@
                 <a href="/map" class="nav-link">World Map</a>
                 <a href="/translate" class="nav-link">Language Translation</a>
                 <a href="/recommended-ai-tools" class="nav-link">Recommended AI Tools</a>
+                <br>
+                <div class="sidebar-sections">
+                    <div class="sidebar-section">
+                        <h3>Name of Your Organisation</h3>
+                        <div id="org-overview"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Key Projects</h3>
+                        <div id="org-projects"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Team Members</h3>
+                        <div id="org-team"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Goals & Objectives</h3>
+                        <div id="org-goals"></div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Resources & Tools</h3>
+                        <div id="org-resources"></div>
+                    </div>
+                </div>
+                <div class="sidebar-footer">
+                    <button onclick="updateOrgInfo(true)" class="refresh-btn">
+                        Refresh Organization Info
+                    </button>
+                </div>
             </div>
-        </nav>
-
-        <!-- Add sidebar -->
-        <div class="sidebar" id="org-sidebar">
-            <h2>Profile of Your Organization</h2>
-            <div class="sidebar-sections">
-                <div class="sidebar-section">
-                    <h3>Name of Organisation</h3>
-                    <div id="org-overview"></div>
-                </div>
-                <div class="sidebar-section">
-                    <h3>Key Projects</h3>
-                    <div id="org-projects"></div>
-                </div>
-                <div class="sidebar-section">
-                    <h3>Team Members</h3>
-                    <div id="org-team"></div>
-                </div>
-                <div class="sidebar-section">
-                    <h3>Goals & Objectives</h3>
-                    <div id="org-goals"></div>
-                </div>
-                <div class="sidebar-section">
-                    <h3>Resources & Tools</h3>
-                    <div id="org-resources"></div>
-                </div>
-            </div>
-            <div class="sidebar-footer">
-                <button onclick="updateOrgInfo(true)" class="refresh-btn">
-                    Refresh Organization Info
-                </button>
-            </div>
-        </div>
+            
 
         <!-- Main content remains -->
         <div class="content">
