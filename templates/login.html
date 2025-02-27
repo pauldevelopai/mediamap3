@@ -12,6 +12,23 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            flex-direction: column;
+        }
+        .banner {
+            background-color: #007bff;
+            color: #fff;
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .banner-subtitle {
+            font-size: 16px;
+            font-weight: normal;
+            margin-top: 5px;
         }
         .container {
             background-color: #fff;
@@ -63,6 +80,10 @@
     </style>
 </head>
 <body>
+    <div class="banner">
+        MediaMap
+        <div class="banner-subtitle">Created by Develop AI</div>
+    </div>
     <div class="container">
         <h1>Login</h1>
         <form method="POST" class="auth-form">
