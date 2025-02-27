@@ -140,6 +140,15 @@
                     <h3>Resources & Tools</h3>
                     <div id="org-resources"></div>
                 </div>
+                <div class="sidebar-section">
+                    <h3>AI Implementation Scores</h3>
+                    <ul id="ai-scores">
+                        <li>Data Utilization: <span id="data-utilization-score">85%</span></li>
+                        <li>Automation Level: <span id="automation-level-score">70%</span></li>
+                        <li>AI Integration: <span id="ai-integration-score">90%</span></li>
+                        <li>Innovation Index: <span id="innovation-index-score">75%</span></li>
+                    </ul>
+                </div>
             </div>
             <div class="sidebar-footer">
                 <button onclick="updateOrgInfo(true)" class="refresh-btn">
@@ -262,6 +271,11 @@
                             formatSection(data.org_info.Goals_Objectives);
                         document.getElementById('org-resources').innerHTML = 
                             formatSection(data.org_info.Resources_Tools);
+                        // Update AI scores
+                        document.getElementById('data-utilization-score').textContent = data.ai_scores.Data_Utilization;
+                        document.getElementById('automation-level-score').textContent = data.ai_scores.Automation_Level;
+                        document.getElementById('ai-integration-score').textContent = data.ai_scores.AI_Integration;
+                        document.getElementById('innovation-index-score').textContent = data.ai_scores.Innovation_Index;
                     } else {
                         console.error('Error updating organization info:', data.error);
                     }
