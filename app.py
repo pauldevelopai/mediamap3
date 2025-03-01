@@ -746,6 +746,10 @@ def recommended_ai_tools():
 def generate_insights():
     return render_template('generate_insights.html')
 
+@app.route('/your-info')
+def your_info():
+    return render_template('your_info.html')
+
 # Create database tables
 with app.app_context():
     db.create_all()
