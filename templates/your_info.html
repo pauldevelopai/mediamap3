@@ -1,41 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Your Info</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="main-container">
-        <div class="content">
-            <h3>Add fact about your organisation that we should know</h3>
-            <input type="text" id="fact-input" class="form-control" placeholder="Enter a fact about your organization">
-            <button class="btn btn-secondary" onclick="addFact()">Add Fact</button>
-        </div>
-    </div>
-    <script>
-        function addFact() {
-            const factInput = document.getElementById('fact-input');
-            const fact = factInput.value.trim();
-            
-            if (fact) {
-                fetch('/add-fact', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ fact: fact })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        factInput.value = '';
-                        alert('Fact added successfully!');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            }
+{% extends "base.html" %}
+
+{% block title %}Your Info{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h3>Add fact about your organisation that we should know</h3>
+    <input type="text" id="fact-input" class="form-control" placeholder="Enter a fact about your organization">
+    <button class="btn btn-secondary" onclick="addFact()">Add Fact</button>
+</div>
+<script>
+    function addFact() {
+        const factInput = document.getElementById('fact-input');
+        const fact = factInput.value.trim();
+        
+        if (fact) {
+            fetch('/add-fact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fact: fact })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    factInput.value = '';
+                    alert('Fact added successfully!');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
-    </script>
-</body>
-</html> 
+    }
+</script>
+{% endblock %} 

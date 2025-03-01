@@ -1,93 +1,84 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AI Workflow Lessons</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-<body>
-    <div class="nav-bar">
-        <a href="/" class="nav-link">Back to Chat</a>
+{% extends "base.html" %}
+
+{% block title %}AI Workflow Lessons{% endblock %}
+
+{% block content %}
+<div class="lessons-container">
+    <div class="lessons-header">
+        <h1>Daily AI Workflow Lessons</h1>
+        <button onclick="createNewLesson()" class="create-lesson-btn">
+            Create New Lesson
+        </button>
     </div>
     
-    <div class="lessons-container">
-        <div class="lessons-header">
-            <h1>Daily AI Workflow Lessons</h1>
-            <button onclick="createNewLesson()" class="create-lesson-btn">
-                Create New Lesson
+    <div class="lessons-tab" id="lessons-panel">
+        <div id="current-lesson">
+            <div id="lesson-content"></div>
+            <button id="complete-lesson" onclick="completeLesson()" class="lesson-btn">
+                Mark as Complete
             </button>
         </div>
-        
-        <div class="lessons-tab" id="lessons-panel">
-            <div id="current-lesson">
-                <div id="lesson-content"></div>
-                <button id="complete-lesson" onclick="completeLesson()" class="lesson-btn">
-                    Mark as Complete
-                </button>
-            </div>
-        </div>
     </div>
+</div>
+<script>
+    let currentLessonId = null;
 
-    <script>
-        let currentLessonId = null;
-
-        function loadLesson() {
-            fetch('/lessons')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        currentLessonId = data.lesson.id;
-                        const lessonContent = document.getElementById('lesson-content');
-                        lessonContent.innerHTML = marked.parse(data.lesson.content);
-                        
-                        // Update button state
-                        const completeBtn = document.getElementById('complete-lesson');
-                        completeBtn.disabled = data.lesson.completed;
-                        completeBtn.textContent = data.lesson.completed ? 
-                            'Completed' : 'Mark as Complete';
-                    }
-                })
-                .catch(error => console.error('Error loading lesson:', error));
-        }
-
-        function completeLesson() {
-            if (!currentLessonId) return;
-            
-            fetch(`/lessons/complete/${currentLessonId}`, {
-                method: 'POST'
-            })
+    function loadLesson() {
+        fetch('/lessons')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    loadLesson(); // Load next lesson
+                    currentLessonId = data.lesson.id;
+                    const lessonContent = document.getElementById('lesson-content');
+                    lessonContent.innerHTML = marked.parse(data.lesson.content);
+                    
+                    // Update button state
+                    const completeBtn = document.getElementById('complete-lesson');
+                    completeBtn.disabled = data.lesson.completed;
+                    completeBtn.textContent = data.lesson.completed ? 
+                        'Completed' : 'Mark as Complete';
                 }
             })
-            .catch(error => console.error('Error completing lesson:', error));
-        }
+            .catch(error => console.error('Error loading lesson:', error));
+    }
 
-        function createNewLesson() {
-            const createBtn = document.querySelector('.create-lesson-btn');
-            createBtn.disabled = true;
-            createBtn.textContent = 'Creating...';
-            
-            fetch('/lessons/create', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    loadLesson();  // Load the newly created lesson
-                }
-            })
-            .catch(error => console.error('Error:', error))
-            .finally(() => {
-                createBtn.disabled = false;
-                createBtn.textContent = 'Create New Lesson';
-            });
-        }
+    function completeLesson() {
+        if (!currentLessonId) return;
+        
+        fetch(`/lessons/complete/${currentLessonId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadLesson(); // Load next lesson
+            }
+        })
+        .catch(error => console.error('Error completing lesson:', error));
+    }
 
-        // Load lesson when page loads
-        document.addEventListener('DOMContentLoaded', loadLesson);
-    </script>
-</body>
-</html> 
+    function createNewLesson() {
+        const createBtn = document.querySelector('.create-lesson-btn');
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
+        
+        fetch('/lessons/create', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadLesson();  // Load the newly created lesson
+            }
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create New Lesson';
+        });
+    }
+
+    // Load lesson when page loads
+    document.addEventListener('DOMContentLoaded', loadLesson);
+</script>
+{% endblock %} 

@@ -1,18 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Recommended AI Tools</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="nav-bar">
-        <a href="/" class="nav-link">Back to Home</a>
-    </div>
+{% extends "base.html" %}
 
-    <div class="main-container">
-        <h1>Recommended AI Tools</h1>
-        <p>Welcome to the Recommended AI Tools page. Here you can explore various AI-powered tools and features.</p>
-        <!-- Add content for recommended AI tools here -->
-    </div>
-</body>
-</html> 
+{% block title %}Recommended AI Tools{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <h1>Recommended AI Tools</h1>
+    <p>Welcome to the Recommended AI Tools page. Here you can explore various AI-powered tools and features.</p>
+    <!-- Add content for recommended AI tools here -->
+</div>
+{% endblock %} 
