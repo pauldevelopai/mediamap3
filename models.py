@@ -1,6 +1,8 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.sql import func
 
 db = SQLAlchemy()
 
@@ -94,4 +96,17 @@ class Location(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.String(50), nullable=False)
+    recipient_id = db.Column(db.String(50), nullable=False)
+    message_text = db.Column(db.String(2000), nullable=False)
+    timestamp = db.Column(db.DateTime, server_default=func.now())
+    is_user_message = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f"<ChatMessage(message_text='{self.message_text}')>" 
