@@ -351,7 +351,7 @@ def process_with_ai(message, chat_history=None):
         print(f"Error processing with AI: {str(e)}")
         return f"Sorry, I encountered an error: {str(e)}"
 
-@app.route('/synthesize', methods=['GET'])
+@app.route('/synthesize')
 def synthesize_org_info():
     """Synthesize information about the organization from available data"""
     refresh = request.args.get('refresh', 'false').lower() == 'true'
@@ -390,7 +390,7 @@ def synthesize_org_info():
                 db.session.add(org_info)
             
             org_info.org_info = json.dumps(default_info)
-            org_info.updated_at = datetime.now(timezone.utc)  # Fix the deprecated warning
+            org_info.updated_at = datetime.now(timezone.utc)
             db.session.commit()
             
             return jsonify({
@@ -401,12 +401,23 @@ def synthesize_org_info():
         # Prepare content for analysis
         content = "\n".join(messages)
         
-        # Send to OpenAI for analysis
+        # Send to OpenAI for analysis - with a much more specific system prompt
         response = client.chat.completions.create(
             model="gpt-4", 
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that analyzes text and extracts information about an organization. Format your response as a JSON object with the following keys: Organization_Overview, Key_Projects, Team_Members. Each should contain relevant information extracted from the text."},
-                {"role": "user", "content": f"Extract information about the organization from this text: {content}"}
+                {"role": "system", "content": """
+                Extract factual information about the organization from the provided text. 
+                DO NOT analyze the text or comment on its limitations. 
+                Respond ONLY with a JSON object using this exact format:
+                {
+                  "Organization_Overview": "Name of organization",
+                  "Key_Projects": ["Project 1", "Project 2"],
+                  "Team_Members": ["Member 1", "Member 2"]
+                }
+                If information is missing for any field, use default values: "Paul Media" for Organization_Overview,
+                ["Project 1", "Project 2"] for Key_Projects, and ["Team Member 1", "Team Member 2"] for Team_Members.
+                """}, 
+                {"role": "user", "content": f"Extract organization information from this text: {content}"}
             ]
         )
         
@@ -428,9 +439,9 @@ def synthesize_org_info():
                 except json.JSONDecodeError:
                     # If still failing, use a placeholder
                     org_data = {
-                        "Organization_Overview": "Organization information could not be processed",
-                        "Key_Projects": ["Unable to extract projects"],
-                        "Team_Members": ["Unable to extract team members"]
+                        "Organization_Overview": "Paul Media",
+                        "Key_Projects": ["Project 1", "Project 2"],
+                        "Team_Members": ["Team Member 1", "Team Member 2"]
                     }
             else:
                 # Use default data if we can't parse JSON
@@ -440,11 +451,18 @@ def synthesize_org_info():
                     "Team_Members": ["Team Member 1", "Team Member 2"]
                 }
         
-        # Check if the JSON has the expected keys
+        # Check if the JSON has the expected keys and verify they don't contain analysis text
         required_keys = ["Organization_Overview", "Key_Projects", "Team_Members"]
         for key in required_keys:
             if key not in org_data:
                 org_data[key] = []
+            
+            # Check if the Organization_Overview contains analysis text
+            if key == "Organization_Overview" and isinstance(org_data[key], str):
+                analysis_words = ["limited information", "provides", "appears to be", "seems to be", "text indicates"]
+                if any(word in org_data[key].lower() for word in analysis_words):
+                    # Replace with default
+                    org_data[key] = "Paul Media"
         
         # Store the result in the database
         if not org_info:
@@ -452,7 +470,7 @@ def synthesize_org_info():
             db.session.add(org_info)
         
         org_info.org_info = json.dumps(org_data)
-        org_info.updated_at = datetime.now(timezone.utc)  # Fix the deprecated warning
+        org_info.updated_at = datetime.now(timezone.utc)
         db.session.commit()
         
         return jsonify({
