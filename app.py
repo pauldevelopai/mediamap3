@@ -1374,5 +1374,17 @@ class OrganizationInfo(db.Model):
     
     # No relationship defined - we'll use direct queries instead
 
+@app.route('/guardpass')
+@login_required
+def guardpass():
+    """Guardpass page with right sidebar hidden"""
+    try:
+        # Pass hide_right_sidebar=True to hide the right sidebar on this page
+        return render_template('guardpass.html', hide_right_sidebar=True)
+    except Exception as e:
+        print(f"Error in guardpass route: {str(e)}")
+        flash('An error occurred while loading the Guardpass page.', 'danger')
+        return redirect(url_for('home'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 
