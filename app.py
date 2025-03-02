@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -14,6 +14,7 @@ import time
 import threading
 import uuid
 import re
+from urllib.parse import urlparse
 
 # Load environment variables
 load_dotenv()
@@ -32,9 +33,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
 db.init_app(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
+login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+login_manager.login_message = None  # This will disable the message entirely
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -194,7 +195,6 @@ def login():
             print(f"User attributes: {[attr for attr in user_attrs if not attr.startswith('_')]}")
         
         # The password field might be named password_hash or something else
-        # Let's check if any password-related attribute exists and use it
         if user:
             # Try different common password field names
             if hasattr(user, 'password_hash'):
@@ -204,20 +204,34 @@ def login():
             elif hasattr(user, 'pwd_hash'):
                 password_verified = check_password_hash(user.pwd_hash, password)
             else:
-                # If we can't find a password field, let's just accept any login for now
-                # (for debugging purposes only - REMOVE THIS IN PRODUCTION)
+                # If we can't find a password field, accept any login for debugging
                 password_verified = True
                 print("WARNING: No password field found, accepting any login")
             
             if password_verified:
                 login_user(user, remember=remember)
-                next_page = request.args.get('next')
                 
-                # For debugging
+                # Create a fresh chat session for the user
+                try:
+                    # Create a new chat in the database
+                    new_chat = Chat(
+                        user_id=user.id,
+                        title=f"New Chat - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                    )
+                    db.session.add(new_chat)
+                    db.session.commit()
+                    
+                    # Store this chat ID in the session
+                    session['current_chat_id'] = new_chat.id
+                    print(f"Created fresh chat session: {new_chat.id}")
+                except Exception as e:
+                    print(f"Error creating fresh chat: {str(e)}")
+                
+                next_page = request.args.get('next')
                 print(f"Login successful for {username}, redirecting to: {next_page or 'home'}")
                 
-                # Ensure next_page is safe and exists, default to home
-                if not next_page or url_parse(next_page).netloc != '':
+                # Use urlparse instead of url_parse
+                if not next_page or urlparse(next_page).netloc != '':
                     next_page = url_for('home')
                     
                 return redirect(next_page)
@@ -1300,6 +1314,51 @@ with app.app_context():
 @app.route('/logout')
 @login_required
 def logout():
+    # Save the current chat session to the database before logging out
+    try:
+        current_chat_id = session.get('current_chat_id')
+        if current_chat_id:
+            # Get any active messages from session if they exist
+            chat_messages = active_chats.get(str(current_chat_id), [])
+            
+            # Save any unsaved messages to the database
+            for msg in chat_messages:
+                # Check if this message is already in the database
+                existing = Message.query.filter_by(
+                    chat_id=current_chat_id,
+                    role=msg.get('role'),
+                    content=msg.get('content')
+                ).first()
+                
+                if not existing:
+                    # Save this message to the database
+                    new_message = Message(
+                        chat_id=current_chat_id,
+                        role=msg.get('role'),
+                        content=msg.get('content'),
+                        timestamp=datetime.now(timezone.utc)
+                    )
+                    db.session.add(new_message)
+            
+            # Update the chat's updated_at timestamp
+            chat = Chat.query.get(current_chat_id)
+            if chat:
+                chat.updated_at = datetime.now(timezone.utc)
+            
+            # Commit all changes
+            db.session.commit()
+            print(f"Saved chat session {current_chat_id} before logout")
+            
+            # Remove from active chats
+            if str(current_chat_id) in active_chats:
+                del active_chats[str(current_chat_id)]
+                
+            # Clear from session
+            session.pop('current_chat_id', None)
+    except Exception as e:
+        print(f"Error saving chat on logout: {str(e)}")
+    
+    # Proceed with logout
     logout_user()
     return redirect(url_for('home'))
 
