@@ -85,6 +85,11 @@
         messageDiv.className = `message ${role}-message`;
         messageDiv.innerHTML = `<p>${content}</p>`;
         chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    function scrollToBottom() {
+        const chatMessages = document.getElementById('chat-messages');
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -116,6 +121,9 @@
                 latestChat.messages.forEach(msg => {
                     appendMessage(msg.role, msg.content);
                 });
+                
+                // Ensure we scroll to the bottom after all messages are loaded
+                setTimeout(scrollToBottom, 100);
             }
         });
     }
