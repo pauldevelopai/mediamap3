@@ -200,29 +200,17 @@
             refreshButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
             refreshButton.disabled = true;
             
-            // Check localStorage first unless refresh is requested
-            const cachedData = localStorage.getItem('orgInfoData');
-            if (cachedData && !refresh) {
-                try {
-                    const data = JSON.parse(cachedData);
-                    updateUI(data);
-                    refreshButton.innerHTML = originalButtonText;
-                    refreshButton.disabled = false;
-                    return;
-                } catch (error) {
-                    console.error('Error parsing cached data:', error);
-                    // Continue to fetch fresh data
-                }
-            }
-            
-            // If no cached data or refresh requested, fetch from API
+            // Always fetch from the API with the current state
             const url = refresh ? '/synthesize?refresh=true' : '/synthesize';
             fetch(url)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        // Save to localStorage for future use
-                        localStorage.setItem('orgInfoData', JSON.stringify(data.org_info));
                         updateUI(data.org_info);
                     } else {
                         console.error('Error updating organization info:', data.error);
@@ -249,18 +237,25 @@
         }
 
         function updateUI(orgInfo) {
-            // Update each section
-            document.getElementById('org-overview').innerHTML = 
-                formatSection(orgInfo.Organization_Overview);
-            document.getElementById('org-projects').innerHTML = 
-                formatSection(orgInfo.Key_Projects);
-            document.getElementById('org-team').innerHTML = 
-                formatSection(orgInfo.Team_Members);
-            // Additional sections as needed
+            // Update each section with error handling
+            try {
+                document.getElementById('org-overview').innerHTML = 
+                    formatSection(orgInfo.Organization_Overview);
+                document.getElementById('org-projects').innerHTML = 
+                    formatSection(orgInfo.Key_Projects);
+                document.getElementById('org-team').innerHTML = 
+                    formatSection(orgInfo.Team_Members);
+            } catch (error) {
+                console.error('Error updating UI:', error);
+            }
         }
 
         function formatSection(content) {
+            if (!content) return 'No information available';
+            
             if (Array.isArray(content)) {
+                if (content.length === 0) return 'No items available';
+                
                 return '<ul class="list-group list-group-flush">' + 
                     content.map(item => `<li class="list-group-item px-0">${item}</li>`).join('') + 
                     '</ul>';
@@ -268,24 +263,15 @@
             return content;
         }
 
-        // Load organization info from localStorage on page load
-        // Only call API if we don't have cached data
+        // Load organization info on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const cachedData = localStorage.getItem('orgInfoData');
-            if (cachedData) {
-                try {
-                    const data = JSON.parse(cachedData);
-                    updateUI(data);
-                } catch (error) {
-                    console.error('Error parsing cached data:', error);
-                    // We'll fetch fresh data on user request
-                }
-            }
-            
             // Add event listener to refresh button
             document.getElementById('refresh-org-info').addEventListener('click', function() {
                 updateOrgInfo(true); // true means force refresh
             });
+            
+            // Initial load of organization info
+            updateOrgInfo(false);
         });
     </script>
     {% block extra_scripts %}{% endblock %}

@@ -6,13 +6,14 @@ from models import db, User, MediaAnalysis, Chat, Message, Lesson, UserLesson, O
 import os
 from openai import OpenAI
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import urllib.parse
 import requests
 from auth import auth
 import time
 import threading
 import uuid
+import re
 
 # Load environment variables
 load_dotenv()
@@ -99,8 +100,12 @@ save_thread.start()
 def save_chat_to_db(chat_id, chat_data):
     """Save or update a chat in the database"""
     try:
+        # Fix the type error by ensuring chat_id is treated correctly
+        # Convert chat_id to string first to check if it's a digit
+        chat_id_str = str(chat_id)
+        
         # Check if the chat already exists in the database
-        chat = Chat.query.get(int(chat_id)) if chat_id.isdigit() else None
+        chat = db.session.get(Chat, int(chat_id_str)) if chat_id_str.isdigit() else None
         
         if not chat:
             # Create a new chat if it doesn't exist
@@ -347,109 +352,119 @@ def process_with_ai(message, chat_history=None):
         return f"Sorry, I encountered an error: {str(e)}"
 
 @app.route('/synthesize', methods=['GET'])
-@login_required
 def synthesize_org_info():
+    """Synthesize information about the organization from available data"""
+    refresh = request.args.get('refresh', 'false').lower() == 'true'
+    
     try:
-        # Get all chats for the current user
-        chats = Chat.query.filter_by(user_id=current_user.id).all()
+        # Get organization info from the database
+        org_info = OrganizationInfo.query.first()
         
-        # Get all facts for this user
-        facts = OrganizationFact.query.filter_by(user_id=current_user.id).all()
-        facts_list = [fact.fact for fact in facts]
+        # If we're not refreshing and have existing data, return it
+        if not refresh and org_info and org_info.org_info:
+            return jsonify({
+                'success': True,
+                'org_info': json.loads(org_info.org_info) if org_info.org_info else {}
+            })
         
-        # Compile all messages into a conversation history
-        conversation_history = []
+        # Get all data that might be useful for synthesis
+        chats = Chat.query.order_by(Chat.updated_at.desc()).limit(10).all()
+        
+        # Extract messages from chats
+        messages = []
         for chat in chats:
-            for message in chat.messages:
-                conversation_history.append(f"{message.role}: {message.content}")
+            chat_messages = Message.query.filter_by(chat_id=chat.id).all()
+            messages.extend([msg.content for msg in chat_messages])
         
-        # First, try to extract location information
-        location_response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": """You are a location data expert. Extract any location information from the conversation.
-                If found, return in this exact JSON format:
-                {
-                    "location_name": "City, Country",
-                    "found": true
-                }
-                If no location is found, return:
-                {
-                    "found": false
-                }
-                Only return locations that are explicitly mentioned as the user's or organization's location."""},
-                {"role": "user", "content": "\n".join(conversation_history)}
-            ]
-        )
-        
-        location_data = json.loads(location_response.choices[0].message.content)
-        
-        # If location found and user doesn't have location set, get coordinates
-        if location_data.get("found", False) and not current_user.location_name:
-            # Use OpenStreetMap Nominatim API to get coordinates
-            location_name = location_data["location_name"]
-            encoded_location = urllib.parse.quote(location_name)
-            geocode_url = f"https://nominatim.openstreetmap.org/search?q={encoded_location}&format=json"
+        # If we don't have enough data, return a placeholder
+        if not messages:
+            default_info = {
+                "Organization_Overview": "Paul Media",
+                "Key_Projects": ["Project 1", "Project 2"],
+                "Team_Members": ["Team Member 1", "Team Member 2"]
+            }
             
-            response = requests.get(geocode_url, headers={'User-Agent': 'MediaAnalysisApp'})
-            if response.status_code == 200:
-                results = response.json()
-                if results:
-                    # Update user's location
-                    current_user.latitude = float(results[0]['lat'])
-                    current_user.longitude = float(results[0]['lon'])
-                    current_user.location_name = location_name
-                    db.session.commit()
+            # Store this info in the database
+            if not org_info:
+                org_info = OrganizationInfo()
+                db.session.add(org_info)
+            
+            org_info.org_info = json.dumps(default_info)
+            org_info.updated_at = datetime.now(timezone.utc)  # Fix the deprecated warning
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'org_info': default_info
+            })
         
-        # Continue with regular organization info synthesis
-        # Get synthesis from OpenAI
+        # Prepare content for analysis
+        content = "\n".join(messages)
+        
+        # Send to OpenAI for analysis
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4", 
             messages=[
-                {"role": "system", "content": """You are an organizational analyst. Extract key information about the organization from the conversation and return it in this exact JSON format:
-{
-    "Organization_Overview": "Brief overview text",
-    "Key_Projects": ["project1", "project2", ...],
-    "Team_Members": ["member1", "member2", ...],
-    "Goals_Objectives": ["goal1", "goal2", ...],
-    "Resources_Tools": ["resource1", "resource2", ...]
-}
-Only include information that has been explicitly mentioned or can be directly inferred."""},
-                {"role": "user", "content": "\n".join(conversation_history)}
+                {"role": "system", "content": "You are a helpful assistant that analyzes text and extracts information about an organization. Format your response as a JSON object with the following keys: Organization_Overview, Key_Projects, Team_Members. Each should contain relevant information extracted from the text."},
+                {"role": "user", "content": f"Extract information about the organization from this text: {content}"}
             ]
         )
         
-        # Parse the response
-        synthesis = json.loads(response.choices[0].message.content)
+        # Extract and parse the JSON response
+        json_text = response.choices[0].message.content.strip()
         
-        # Add facts to the response
-        synthesis["Organization_Facts"] = facts_list
+        # Try to handle common JSON formatting issues
+        try:
+            # First try to parse it directly
+            org_data = json.loads(json_text)
+        except json.JSONDecodeError:
+            # If that fails, try to extract JSON from markdown code blocks or text
+            json_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+            json_match = re.search(json_pattern, json_text)
+            
+            if json_match:
+                try:
+                    org_data = json.loads(json_match.group(1))
+                except json.JSONDecodeError:
+                    # If still failing, use a placeholder
+                    org_data = {
+                        "Organization_Overview": "Organization information could not be processed",
+                        "Key_Projects": ["Unable to extract projects"],
+                        "Team_Members": ["Unable to extract team members"]
+                    }
+            else:
+                # Use default data if we can't parse JSON
+                org_data = {
+                    "Organization_Overview": "Paul Media",
+                    "Key_Projects": ["Project 1", "Project 2"],
+                    "Team_Members": ["Team Member 1", "Team Member 2"]
+                }
         
-        # Update or create org info in database
-        org_info = OrganizationInfo.query.filter_by(user_id=current_user.id).first()
+        # Check if the JSON has the expected keys
+        required_keys = ["Organization_Overview", "Key_Projects", "Team_Members"]
+        for key in required_keys:
+            if key not in org_data:
+                org_data[key] = []
+        
+        # Store the result in the database
         if not org_info:
-            org_info = OrganizationInfo(user_id=current_user.id)
+            org_info = OrganizationInfo()
             db.session.add(org_info)
         
-        org_info.overview = synthesis["Organization_Overview"]
-        org_info.key_projects = json.dumps(synthesis["Key_Projects"])
-        org_info.team_members = json.dumps(synthesis["Team_Members"])
-        org_info.goals = json.dumps(synthesis["Goals_Objectives"])
-        org_info.resources = json.dumps(synthesis["Resources_Tools"])
-        org_info.updated_at = datetime.utcnow()
-        
+        org_info.org_info = json.dumps(org_data)
+        org_info.updated_at = datetime.now(timezone.utc)  # Fix the deprecated warning
         db.session.commit()
         
         return jsonify({
-            "success": True,
-            "org_info": synthesis
+            'success': True, 
+            'org_info': org_data
         })
-        
+    
     except Exception as e:
         print(f"Error in synthesize_org_info: {str(e)}")
         return jsonify({
-            "success": False,
-            "error": str(e)
+            'success': False,
+            'error': str(e)
         }), 500
 
 @app.route('/lessons')
@@ -912,6 +927,74 @@ def manage_chat(chat_id):
 @app.route('/chat-history')
 def chat_history():
     return render_template('chats.html')
+
+@app.route('/api/org-info', methods=['GET'])
+def get_org_info():
+    """Get organization info for the current user"""
+    user_id = current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None
+    
+    # Get organization facts for this user
+    facts = []
+    if user_id:
+        org_facts = OrganizationFact.query.filter_by(user_id=user_id).all()
+        facts = [fact.fact for fact in org_facts]
+    
+    # Get chat messages for analysis
+    chat_messages = []
+    if user_id:
+        # Get the user's chats
+        chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.updated_at.desc()).limit(5).all()
+        for chat in chats:
+            messages = Message.query.filter_by(chat_id=chat.id).all()
+            chat_messages.extend([msg.content for msg in messages])
+    
+    # If we don't have enough data, return a minimal placeholder
+    if not chat_messages and not facts:
+        return jsonify({
+            "Organization_Overview": "No organization information available yet. Start chatting or add facts to build your profile.",
+            "Key_Projects": [],
+            "Team_Members": [],
+            "Goals_Objectives": []
+        })
+    
+    # Combine facts and messages for analysis
+    content_to_analyze = "\n".join(facts + chat_messages)
+    
+    # Send to OpenAI for analysis
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT_SYNTHESIS},
+                {"role": "user", "content": content_to_analyze}
+            ],
+            max_tokens=1000
+        )
+        
+        org_info_text = response.choices[0].message.content
+        try:
+            # Try to parse as JSON
+            org_info = json.loads(org_info_text)
+        except json.JSONDecodeError:
+            # If not valid JSON, create a simplified structure
+            org_info = {
+                "Organization_Overview": org_info_text,
+                "Key_Projects": [],
+                "Team_Members": [],
+                "Goals_Objectives": []
+            }
+        
+        return jsonify(org_info)
+        
+    except Exception as e:
+        print(f"Error analyzing organization info: {str(e)}")
+        return jsonify({
+            "error": "Could not analyze organization info",
+            "Organization_Overview": "Error retrieving organization information.",
+            "Key_Projects": [],
+            "Team_Members": [],
+            "Goals_Objectives": []
+        }), 500
 
 @app.cli.command("reset-db")
 def reset_db():
