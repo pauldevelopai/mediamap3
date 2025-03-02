@@ -142,6 +142,12 @@
             <!-- Right Sidebar -->
             <div class="col-md-3">
                 <div class="sidebar">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="mb-0">Organization Info</h3>
+                        <button id="refresh-org-info" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
                     <div class="sidebar-section">
                         <h3>Name of Your Organisation</h3>
                         <div id="org-overview">Paul Media</div>
@@ -185,24 +191,69 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function updateOrgInfo(refresh = false) {
+            // Show loading indicator
+            const refreshButton = document.getElementById('refresh-org-info');
+            const originalButtonText = refreshButton.innerHTML;
+            refreshButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
+            refreshButton.disabled = true;
+            
+            // Check localStorage first unless refresh is requested
+            const cachedData = localStorage.getItem('orgInfoData');
+            if (cachedData && !refresh) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    updateUI(data);
+                    refreshButton.innerHTML = originalButtonText;
+                    refreshButton.disabled = false;
+                    return;
+                } catch (error) {
+                    console.error('Error parsing cached data:', error);
+                    // Continue to fetch fresh data
+                }
+            }
+            
+            // If no cached data or refresh requested, fetch from API
             const url = refresh ? '/synthesize?refresh=true' : '/synthesize';
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update each section
-                        document.getElementById('org-overview').innerHTML = 
-                            formatSection(data.org_info.Organization_Overview);
-                        document.getElementById('org-projects').innerHTML = 
-                            formatSection(data.org_info.Key_Projects);
-                        document.getElementById('org-team').innerHTML = 
-                            formatSection(data.org_info.Team_Members);
-                        // Additional sections as needed
+                        // Save to localStorage for future use
+                        localStorage.setItem('orgInfoData', JSON.stringify(data.org_info));
+                        updateUI(data.org_info);
                     } else {
                         console.error('Error updating organization info:', data.error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Failed to load organization information.'
+                        });
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'There was an error connecting to the server.'
+                    });
+                })
+                .finally(() => {
+                    // Restore button state
+                    refreshButton.innerHTML = originalButtonText;
+                    refreshButton.disabled = false;
+                });
+        }
+
+        function updateUI(orgInfo) {
+            // Update each section
+            document.getElementById('org-overview').innerHTML = 
+                formatSection(orgInfo.Organization_Overview);
+            document.getElementById('org-projects').innerHTML = 
+                formatSection(orgInfo.Key_Projects);
+            document.getElementById('org-team').innerHTML = 
+                formatSection(orgInfo.Team_Members);
+            // Additional sections as needed
         }
 
         function formatSection(content) {
@@ -214,9 +265,24 @@
             return content;
         }
 
-        // Load organization info on page load
+        // Load organization info from localStorage on page load
+        // Only call API if we don't have cached data
         document.addEventListener('DOMContentLoaded', function() {
-            updateOrgInfo();
+            const cachedData = localStorage.getItem('orgInfoData');
+            if (cachedData) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    updateUI(data);
+                } catch (error) {
+                    console.error('Error parsing cached data:', error);
+                    // We'll fetch fresh data on user request
+                }
+            }
+            
+            // Add event listener to refresh button
+            document.getElementById('refresh-org-info').addEventListener('click', function() {
+                updateOrgInfo(true); // true means force refresh
+            });
         });
     </script>
     {% block extra_scripts %}{% endblock %}
