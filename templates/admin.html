@@ -1,0 +1,18 @@
+from flask import Flask, render_template, request, redirect, url_for, g
+from yourapp import db  # Import your database instance
+from yourapp.models import User  # Import your User model
+from yourapp.auth import login_required  # Import the login_required decorator
+
+@bp.route("/admin/users")
+@login_required
+def admin_users():
+    """Display a list of users in the admin panel."""
+    if not g.user.is_admin:  # Assuming you have an is_admin property on your User model
+        flash("You are not authorized to view this page.")
+        return redirect(url_for("index"))  # Redirect to the home page or another appropriate page
+
+    db = get_db()
+    users = db.execute(
+        "SELECT * FROM user"
+    ).fetchall()
+    return render_template("admin/users.html", users=users)

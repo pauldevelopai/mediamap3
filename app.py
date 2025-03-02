@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 import urllib.parse
 import requests
+from auth import auth
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,8 @@ SYSTEM_PROMPT_SYNTHESIS = """You are an organizational analyst. Extract key info
 5. Resources & Tools
 
 Return the information in JSON format with these categories. Only include information that has been explicitly mentioned or can be directly inferred."""
+
+app.register_blueprint(auth)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -749,6 +752,11 @@ def generate_insights():
 @app.route('/your-info')
 def your_info():
     return render_template('your_info.html')
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    # Admin dashboard logic here
+    return render_template('admin_dashboard.html')
 
 # Create database tables
 with app.app_context():
