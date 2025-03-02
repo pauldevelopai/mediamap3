@@ -108,24 +108,37 @@
     });
 
     function loadChatHistory() {
-        fetch('/chats')
+        // Use the new route
+        fetch('/api/user_chats')
         .then(response => response.json())
-        .then(chats => {
+        .then(data => {
+            if (!data.success) {
+                console.error("Error loading chats:", data.error);
+                return;
+            }
+            
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = '';
+            
+            const chats = data.chats || [];
             
             if (chats.length > 0) {
                 // Use the most recent chat
                 const latestChat = chats[0];
                 currentChatId = latestChat.id;
                 
-                latestChat.messages.forEach(msg => {
-                    appendMessage(msg.role, msg.content);
-                });
-                
-                // Scroll to bottom after loading messages
-                setTimeout(scrollToBottom, 100);
+                if (latestChat.messages && latestChat.messages.length > 0) {
+                    latestChat.messages.forEach(msg => {
+                        appendMessage(msg.role, msg.content);
+                    });
+                    
+                    // Scroll to bottom after loading messages
+                    setTimeout(scrollToBottom, 100);
+                }
             }
+        })
+        .catch(error => {
+            console.error("Error fetching chat history:", error);
         });
     }
 </script>

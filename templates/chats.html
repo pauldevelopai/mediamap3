@@ -49,7 +49,7 @@
     });
     
     function loadAllChats() {
-        fetch('/chats')
+        fetch('/api/user_chats')
         .then(response => response.json())
         .then(chats => {
             const chatList = document.getElementById('chat-list');

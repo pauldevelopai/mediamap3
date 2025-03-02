@@ -254,9 +254,9 @@ def chat():
             chat_data = active_chats[chat_id]
         else:
             try:
-                # Try to load from database
+                # Try to load from database - ensure it belongs to current user
                 chat = db.session.get(Chat, int(chat_id))
-                if chat:
+                if chat and chat.user_id == current_user.id:
                     chat_data = {
                         'messages': [msg.to_dict() for msg in chat.messages]
                     }
@@ -320,6 +320,28 @@ def get_chats():
     
     return jsonify(chats)
 
+@app.route('/api/user_chats')
+def get_user_chats():
+    """Get all chats for the current user"""
+    try:
+        # Only get chats for the current user if authenticated
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.updated_at.desc()).all()
+        else:
+            # Return empty list for non-authenticated users
+            chats = []
+            
+        return jsonify({
+            'success': True,
+            'chats': [chat.to_dict() for chat in chats]
+        })
+    except Exception as e:
+        print(f"Error getting chats: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 def process_with_ai(message, chat_history=None):
     """Process user message with OpenAI and return response"""
     try:
@@ -351,139 +373,240 @@ def process_with_ai(message, chat_history=None):
         print(f"Error processing with AI: {str(e)}")
         return f"Sorry, I encountered an error: {str(e)}"
 
+def get_current_user_id():
+    """Safely get current user ID with logging"""
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        logger.info(f"Authenticated user: {current_user.id} ({current_user.username})")
+        return current_user.id
+    logger.info("No authenticated user")
+    return None
+
 @app.route('/synthesize')
 def synthesize_org_info():
     """Synthesize information about the organization from available data"""
     refresh = request.args.get('refresh', 'false').lower() == 'true'
+    print(f"Synthesize called with refresh={refresh} for user={current_user.username if hasattr(current_user, 'username') else 'anonymous'}")
     
-    try:
-        # Get organization info from the database
-        org_info = OrganizationInfo.query.first()
-        
-        # If we're not refreshing and have existing data, return it
-        if not refresh and org_info and org_info.org_info:
-            return jsonify({
-                'success': True,
-                'org_info': json.loads(org_info.org_info) if org_info.org_info else {}
-            })
-        
-        # Get all data that might be useful for synthesis
-        chats = Chat.query.order_by(Chat.updated_at.desc()).limit(10).all()
-        
-        # Extract messages from chats
-        messages = []
-        for chat in chats:
-            chat_messages = Message.query.filter_by(chat_id=chat.id).all()
-            messages.extend([msg.content for msg in chat_messages])
-        
-        # If we don't have enough data, return a placeholder
-        if not messages:
-            default_info = {
-                "Organization_Overview": "Paul Media",
-                "Key_Projects": ["Project 1", "Project 2"],
-                "Team_Members": ["Team Member 1", "Team Member 2"]
-            }
-            
-            # Store this info in the database
-            if not org_info:
-                org_info = OrganizationInfo()
-                db.session.add(org_info)
-            
-            org_info.org_info = json.dumps(default_info)
-            org_info.updated_at = datetime.now(timezone.utc)
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'org_info': default_info
-            })
-        
-        # Prepare content for analysis
-        content = "\n".join(messages)
-        
-        # Send to OpenAI for analysis - with a much more specific system prompt
-        response = client.chat.completions.create(
-            model="gpt-4", 
-            messages=[
-                {"role": "system", "content": """
-                Extract factual information about the organization from the provided text. 
-                DO NOT analyze the text or comment on its limitations. 
-                Respond ONLY with a JSON object using this exact format:
-                {
-                  "Organization_Overview": "Name of organization",
-                  "Key_Projects": ["Project 1", "Project 2"],
-                  "Team_Members": ["Member 1", "Member 2"]
-                }
-                If information is missing for any field, use default values: "Paul Media" for Organization_Overview,
-                ["Project 1", "Project 2"] for Key_Projects, and ["Team Member 1", "Team Member 2"] for Team_Members.
-                """}, 
-                {"role": "user", "content": f"Extract organization information from this text: {content}"}
-            ]
-        )
-        
-        # Extract and parse the JSON response
-        json_text = response.choices[0].message.content.strip()
-        
-        # Try to handle common JSON formatting issues
-        try:
-            # First try to parse it directly
-            org_data = json.loads(json_text)
-        except json.JSONDecodeError:
-            # If that fails, try to extract JSON from markdown code blocks or text
-            json_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
-            json_match = re.search(json_pattern, json_text)
-            
-            if json_match:
-                try:
-                    org_data = json.loads(json_match.group(1))
-                except json.JSONDecodeError:
-                    # If still failing, use a placeholder
-                    org_data = {
-                        "Organization_Overview": "Paul Media",
-                        "Key_Projects": ["Project 1", "Project 2"],
-                        "Team_Members": ["Team Member 1", "Team Member 2"]
-                    }
-            else:
-                # Use default data if we can't parse JSON
-                org_data = {
-                    "Organization_Overview": "Paul Media",
-                    "Key_Projects": ["Project 1", "Project 2"],
-                    "Team_Members": ["Team Member 1", "Team Member 2"]
-                }
-        
-        # Check if the JSON has the expected keys and verify they don't contain analysis text
-        required_keys = ["Organization_Overview", "Key_Projects", "Team_Members"]
-        for key in required_keys:
-            if key not in org_data:
-                org_data[key] = []
-            
-            # Check if the Organization_Overview contains analysis text
-            if key == "Organization_Overview" and isinstance(org_data[key], str):
-                analysis_words = ["limited information", "provides", "appears to be", "seems to be", "text indicates"]
-                if any(word in org_data[key].lower() for word in analysis_words):
-                    # Replace with default
-                    org_data[key] = "Paul Media"
-        
-        # Store the result in the database
-        if not org_info:
-            org_info = OrganizationInfo()
-            db.session.add(org_info)
-        
-        org_info.org_info = json.dumps(org_data)
-        org_info.updated_at = datetime.now(timezone.utc)
-        db.session.commit()
-        
+    # Get current user id safely
+    user_id = current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None
+    
+    # Generic response for non-authenticated users
+    if not user_id:
         return jsonify({
-            'success': True, 
-            'org_info': org_data
+            'success': True,
+            'org_info': {
+                "Organization_Overview": "Please log in to view your organization",
+                "Key_Projects": ["Login required"],
+                "Team_Members": ["Login required"]
+            }
         })
     
+    try:
+        # Always analyze chats when refresh is requested
+        if refresh:
+            print(f"⭐ Forced refresh requested - analyzing chats for {current_user.username}")
+            
+            # Get user's chats with explicit filtering
+            chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.updated_at.desc()).limit(10).all()
+            print(f"Found {len(chats)} chats for user {current_user.username}")
+            
+            # Extract messages
+            messages = []
+            for chat in chats:
+                chat_messages = Message.query.filter_by(chat_id=chat.id).all()
+                messages.extend([msg.content for msg in chat_messages])
+            
+            print(f"Extracted {len(messages)} messages for user {current_user.username}")
+            
+            # Prepare default info
+            username = current_user.username
+            default_info = {
+                "Organization_Overview": f"{username}'s Organization",
+                "Key_Projects": ["No projects yet"],
+                "Team_Members": [f"{username}"]
+            }
+            
+            # If we have messages, analyze them
+            if messages:
+                content = "\n".join(messages)
+                
+                # Look for direct mentions of organizations with regex
+                org_patterns = [
+                    r"(?:company|organization|organisation|business|firm|agency)\s+(?:name|called|is|:)\s+([A-Za-z0-9\s&]+)",
+                    r"(?:I work|I'm working|I am working|employed|work)\s+(?:at|for|with)\s+([A-Za-z0-9\s&]+)",
+                    r"([A-Za-z0-9\s&]+)\s+(?:is my|is our|is the)\s+(?:company|organization|organisation|business|employer)"
+                ]
+                
+                # Try to directly extract company name
+                org_name = None
+                for pattern in org_patterns:
+                    matches = re.findall(pattern, content, re.IGNORECASE)
+                    if matches:
+                        org_name = matches[0].strip()
+                        if len(org_name) > 3:  # Avoid short meaningless matches
+                            print(f"🔍 Direct regex match found organization: {org_name}")
+                            break
+                
+                if org_name:
+                    # If we found a direct mention, use it
+                    default_info["Organization_Overview"] = org_name
+                
+                # Trim content if too long
+                if len(content) > 8000:
+                    content = content[:8000] + "..."
+                
+                print(f"Sending {len(content)} characters to OpenAI for analysis")
+                
+                try:
+                    # Call OpenAI with a more direct prompt
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": """
+                            You are an expert at extracting specific organization information from text.
+                            
+                            IMPORTANT: Look for any explicit mentions of:
+                            1. Company/organization names
+                            2. Project names
+                            3. Team member names
+                            
+                            Return EXACTLY this JSON format - nothing else:
+                            {
+                              "Organization_Overview": "Exact name of organization (just the name, no analysis)",
+                              "Key_Projects": ["Project 1", "Project 2"],
+                              "Team_Members": ["Member 1", "Member 2"]
+                            }
+                            
+                            For organization name, prioritize direct mentions like:
+                            - "I work for X"
+                            - "Our company is called X"
+                            - "The organization name is X"
+                            
+                            DO NOT include explanations. DO NOT make up information.
+                            If something is not mentioned, use empty arrays or "Unknown".
+                            """}, 
+                            {"role": "user", "content": f"Extract organization information from this text: {content}"}
+                        ],
+                        max_tokens=500,
+                        temperature=0  # Use zero temperature for more direct extraction
+                    )
+                    
+                    json_text = response.choices[0].message.content.strip()
+                    print(f"AI response received: {json_text[:100]}...")
+                    
+                    # Parse JSON with multiple fallbacks
+                    try:
+                        # Try to parse directly
+                        org_data = json.loads(json_text)
+                        print("Successfully parsed JSON response")
+                    except json.JSONDecodeError:
+                        print("JSON parse error, trying to extract JSON block")
+                        # Try to extract JSON from markdown blocks
+                        json_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+                        json_match = re.search(json_pattern, json_text)
+                        
+                        if json_match:
+                            try:
+                                org_data = json.loads(json_match.group(1))
+                                print("Successfully parsed JSON from code block")
+                            except json.JSONDecodeError:
+                                print("JSON parsing failed from code block, using defaults")
+                                org_data = default_info
+                        else:
+                            print("No JSON block found, using defaults")
+                            org_data = default_info
+                    
+                    # If the AI couldn't find an organization name but we found one with regex, use that
+                    if org_name and (not org_data.get("Organization_Overview") or 
+                                     org_data.get("Organization_Overview") == "Unknown" or
+                                     "unknown" in org_data.get("Organization_Overview", "").lower()):
+                        print(f"Using regex-found org name: {org_name}")
+                        org_data["Organization_Overview"] = org_name
+                    
+                    # If AI returned "Unknown" for org name, use default
+                    if not org_data.get("Organization_Overview") or org_data.get("Organization_Overview") == "Unknown":
+                        org_data["Organization_Overview"] = default_info["Organization_Overview"]
+                    
+                    # Ensure all required keys exist
+                    for key in ["Organization_Overview", "Key_Projects", "Team_Members"]:
+                        if key not in org_data:
+                            org_data[key] = default_info.get(key, [])
+                        # Clean up any "Unknown" values
+                        if key != "Organization_Overview" and org_data[key] == ["Unknown"]:
+                            org_data[key] = []
+                    
+                    # Store in database
+                    org_info = OrganizationInfo.query.filter_by(user_id=user_id).first()
+                    if not org_info:
+                        org_info = OrganizationInfo(user_id=user_id)
+                        db.session.add(org_info)
+                    
+                    org_info.org_info = json.dumps(org_data)
+                    org_info.updated_at = datetime.now(timezone.utc)
+                    db.session.commit()
+                    
+                    print(f"✅ Saved new organization info: {org_data}")
+                    
+                    return jsonify({
+                        'success': True,
+                        'org_info': org_data,
+                        'source': 'freshly_analyzed'
+                    })
+                    
+                except Exception as ai_error:
+                    print(f"AI processing error: {str(ai_error)}")
+                    return jsonify({
+                        'success': True,
+                        'org_info': default_info,
+                        'source': 'default_after_error'
+                    })
+            else:
+                # No messages, use defaults
+                print(f"No messages for user {username}, using defaults")
+                return jsonify({
+                    'success': True,
+                    'org_info': default_info,
+                    'source': 'default_no_messages'
+                })
+        
+        # Not a refresh, so return existing data if available
+        org_info = OrganizationInfo.query.filter_by(user_id=user_id).first()
+        if org_info and org_info.org_info:
+            try:
+                org_data = json.loads(org_info.org_info)
+                print(f"Returning cached org info: {org_data}")
+                return jsonify({
+                    'success': True,
+                    'org_info': org_data,
+                    'source': 'cached'
+                })
+            except json.JSONDecodeError:
+                print("Error parsing cached JSON, forcing refresh")
+                # Recursive call with refresh=True
+                return synthesize_org_info() 
+        
+        # No valid existing data, run a fresh analysis
+        print(f"No valid existing data for user {current_user.username}, running fresh analysis")
+        
+        # Set refresh parameter in the request
+        request.args = dict(request.args)
+        request.args['refresh'] = 'true'
+        
+        # Call again with refresh=True
+        return synthesize_org_info()
+            
     except Exception as e:
-        print(f"Error in synthesize_org_info: {str(e)}")
+        print(f"❌ Error in synthesize_org_info: {str(e)}")
+        username = current_user.username if hasattr(current_user, 'username') else "Unknown"
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+            'success': True,
+            'org_info': {
+                "Organization_Overview": f"{username}'s Organization",
+                "Key_Projects": ["Error occurred", "Please try again"],
+                "Team_Members": [username]
+            },
+            'source': 'error_fallback'
+        })
 
 @app.route('/lessons')
 @login_required
@@ -949,70 +1072,223 @@ def chat_history():
 @app.route('/api/org-info', methods=['GET'])
 def get_org_info():
     """Get organization info for the current user"""
+    refresh = request.args.get('refresh', 'false').lower() == 'true'
+    print(f"📊 /api/org-info called with refresh={refresh}")
+    
     user_id = current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None
     
-    # Get organization facts for this user
-    facts = []
-    if user_id:
-        org_facts = OrganizationFact.query.filter_by(user_id=user_id).all()
-        facts = [fact.fact for fact in org_facts]
+    # Generic response for non-authenticated users
+    if not user_id:
+        return jsonify({
+            "Organization_Overview": "Please log in to view organization info",
+            "Key_Projects": [],
+            "Team_Members": []
+        })
     
-    # Get chat messages for analysis
-    chat_messages = []
-    if user_id:
-        # Get the user's chats
+    try:
+        # Always analyze chats when refresh is requested
+        if refresh:
+            print(f"⭐ Refresh requested - analyzing chats for {current_user.username}")
+            
+            # Get user's chats with explicit filtering
+            chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.updated_at.desc()).limit(10).all()
+            print(f"Found {len(chats)} chats for user {current_user.username}")
+            
+            # Extract messages
+            messages = []
+            for chat in chats:
+                chat_messages = Message.query.filter_by(chat_id=chat.id).all()
+                messages.extend([msg.content for msg in chat_messages])
+            
+            print(f"Extracted {len(messages)} messages")
+            
+            # Prepare default info
+            username = current_user.username
+            default_info = {
+                "Organization_Overview": f"{username}'s Organization",
+                "Key_Projects": ["No projects yet"],
+                "Team_Members": [f"{username}"]
+            }
+            
+            # If we have messages, analyze them
+            if messages:
+                content = "\n".join(messages)
+                
+                # Look for direct mentions of organizations with regex
+                org_patterns = [
+                    r"(?:company|organization|organisation|business|firm|agency)\s+(?:name|called|is|:)\s+([A-Za-z0-9\s&]+)",
+                    r"(?:I work|I'm working|I am working|employed|work)\s+(?:at|for|with)\s+([A-Za-z0-9\s&]+)",
+                    r"([A-Za-z0-9\s&]+)\s+(?:is my|is our|is the)\s+(?:company|organization|organisation|business|employer)"
+                ]
+                
+                # Try to directly extract company name
+                org_name = None
+                for pattern in org_patterns:
+                    matches = re.findall(pattern, content, re.IGNORECASE)
+                    if matches:
+                        org_name = matches[0].strip()
+                        if len(org_name) > 3:  # Avoid short meaningless matches
+                            print(f"🔍 Direct regex match found organization: {org_name}")
+                            break
+                
+                if org_name:
+                    # If we found a direct mention, use it
+                    default_info["Organization_Overview"] = org_name
+                
+                # Trim content if too long
+                if len(content) > 8000:
+                    content = content[:8000] + "..."
+                
+                print(f"Sending {len(content)} characters to OpenAI")
+                
+                try:
+                    # Call OpenAI with a more direct prompt
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT_SYNTHESIS},
+                            {"role": "user", "content": content}
+                        ],
+                        max_tokens=1000
+                    )
+                    
+                    org_info_text = response.choices[0].message.content
+                    print(f"AI response received: {org_info_text[:100]}...")
+                    
+                    try:
+                        # Try to parse as JSON
+                        org_data = json.loads(org_info_text)
+                        print("Successfully parsed JSON response")
+                    except json.JSONDecodeError:
+                        print("JSON parse error, looking for code block")
+                        # Look for JSON in code blocks
+                        json_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+                        json_match = re.search(json_pattern, org_info_text)
+                        
+                        if json_match:
+                            try:
+                                org_data = json.loads(json_match.group(1))
+                                print("Successfully parsed JSON from code block")
+                            except json.JSONDecodeError:
+                                print("JSON parsing failed, using defaults")
+                                org_data = default_info
+                        else:
+                            # Try a simplified structure
+                            org_data = {
+                                "Organization_Overview": org_info_text,
+                                "Key_Projects": [],
+                                "Team_Members": []
+                            }
+                    
+                    # If the AI couldn't find an organization name but we found one with regex, use that
+                    if org_name and (not org_data.get("Organization_Overview") or 
+                                     "unknown" in org_data.get("Organization_Overview", "").lower()):
+                        print(f"Using regex-found org name: {org_name}")
+                        org_data["Organization_Overview"] = org_name
+                    
+                    # Save to database
+                    org_info_obj = OrganizationInfo.query.filter_by(user_id=user_id).first()
+                    if not org_info_obj:
+                        org_info_obj = OrganizationInfo(user_id=user_id)
+                        db.session.add(org_info_obj)
+                    
+                    org_info_obj.org_info = json.dumps(org_data)
+                    org_info_obj.updated_at = datetime.now(timezone.utc)
+                    db.session.commit()
+                    
+                    print(f"✅ Saved new organization info: {org_data}")
+                    
+                    return jsonify(org_data)
+                    
+                except Exception as ai_error:
+                    print(f"AI processing error: {str(ai_error)}")
+                    return jsonify(default_info)
+            else:
+                # No messages, use defaults
+                print(f"No messages for user {username}, using defaults")
+                return jsonify(default_info)
+        
+        # Not refreshing, so check for existing data
+        org_info = OrganizationInfo.query.filter_by(user_id=user_id).first()
+        if org_info and org_info.org_info:
+            try:
+                # Return cached data
+                org_data = json.loads(org_info.org_info)
+                print(f"Returning cached org info: {org_data}")
+                return jsonify(org_data)
+            except json.JSONDecodeError:
+                print("Error parsing cached JSON")
+                pass
+        
+        # Get chat messages for analysis (if no cached data found)
         chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.updated_at.desc()).limit(5).all()
+        chat_messages = []
         for chat in chats:
             messages = Message.query.filter_by(chat_id=chat.id).all()
             chat_messages.extend([msg.content for msg in messages])
-    
-    # If we don't have enough data, return a minimal placeholder
-    if not chat_messages and not facts:
-        return jsonify({
-            "Organization_Overview": "No organization information available yet. Start chatting or add facts to build your profile.",
-            "Key_Projects": [],
-            "Team_Members": [],
-            "Goals_Objectives": []
-        })
-    
-    # Combine facts and messages for analysis
-    content_to_analyze = "\n".join(facts + chat_messages)
-    
-    # Send to OpenAI for analysis
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT_SYNTHESIS},
-                {"role": "user", "content": content_to_analyze}
-            ],
-            max_tokens=1000
-        )
         
-        org_info_text = response.choices[0].message.content
+        # If we don't have enough data, return a minimal placeholder
+        username = current_user.username
+        if not chat_messages:
+            return jsonify({
+                "Organization_Overview": f"{username}'s Organization",
+                "Key_Projects": ["No projects yet"],
+                "Team_Members": [f"{username}"]
+            })
+        
+        # Same as refresh branch above, but without all the debug prints
+        content = "\n".join(chat_messages)
         try:
-            # Try to parse as JSON
-            org_info = json.loads(org_info_text)
-        except json.JSONDecodeError:
-            # If not valid JSON, create a simplified structure
-            org_info = {
-                "Organization_Overview": org_info_text,
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT_SYNTHESIS},
+                    {"role": "user", "content": content}
+                ],
+                max_tokens=1000
+            )
+            
+            org_info_text = response.choices[0].message.content
+            
+            try:
+                # Try to parse as JSON
+                org_data = json.loads(org_info_text)
+            except json.JSONDecodeError:
+                # If not valid JSON, create a simplified structure
+                org_data = {
+                    "Organization_Overview": f"{username}'s Organization",
+                    "Key_Projects": [],
+                    "Team_Members": [f"{username}"]
+                }
+            
+            # Save to database for next time
+            org_info_obj = OrganizationInfo.query.filter_by(user_id=user_id).first()
+            if not org_info_obj:
+                org_info_obj = OrganizationInfo(user_id=user_id)
+                db.session.add(org_info_obj)
+            
+            org_info_obj.org_info = json.dumps(org_data)
+            org_info_obj.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            
+            return jsonify(org_data)
+            
+        except Exception as e:
+            print(f"Error analyzing organization info: {str(e)}")
+            return jsonify({
+                "Organization_Overview": f"{username}'s Organization",
                 "Key_Projects": [],
-                "Team_Members": [],
-                "Goals_Objectives": []
-            }
-        
-        return jsonify(org_info)
-        
+                "Team_Members": [f"{username}"]
+            })
+            
     except Exception as e:
-        print(f"Error analyzing organization info: {str(e)}")
+        print(f"Error in get_org_info: {str(e)}")
         return jsonify({
             "error": "Could not analyze organization info",
             "Organization_Overview": "Error retrieving organization information.",
             "Key_Projects": [],
-            "Team_Members": [],
-            "Goals_Objectives": []
-        }), 500
+            "Team_Members": []
+        })
 
 @app.cli.command("reset-db")
 def reset_db():

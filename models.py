@@ -90,13 +90,11 @@ class UserLesson(db.Model):
     last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
 
 class OrganizationInfo(db.Model):
+    __tablename__ = 'organization_info'
+    
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    overview = db.Column(db.Text)
-    key_projects = db.Column(db.Text)  # Store as JSON string
-    team_members = db.Column(db.Text)  # Store as JSON string
-    goals = db.Column(db.Text)  # Store as JSON string
-    resources = db.Column(db.Text)  # Store as JSON string
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Make it user-specific
+    org_info = db.Column(db.Text)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class OrganizationFact(db.Model):

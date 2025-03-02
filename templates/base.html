@@ -193,86 +193,94 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function updateOrgInfo(refresh = false) {
-            // Show loading indicator
-            const refreshButton = document.getElementById('refresh-org-info');
-            const originalButtonText = refreshButton.innerHTML;
-            refreshButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Loading...';
-            refreshButton.disabled = true;
-            
-            // Always fetch from the API with the current state
-            const url = refresh ? '/synthesize?refresh=true' : '/synthesize';
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        updateUI(data.org_info);
-                    } else {
-                        console.error('Error updating organization info:', data.error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: 'Failed to load organization information.'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: 'There was an error connecting to the server.'
-                    });
-                })
-                .finally(() => {
-                    // Restore button state
-                    refreshButton.innerHTML = originalButtonText;
-                    refreshButton.disabled = false;
-                });
-        }
-
-        function updateUI(orgInfo) {
-            // Update each section with error handling
-            try {
-                document.getElementById('org-overview').innerHTML = 
-                    formatSection(orgInfo.Organization_Overview);
-                document.getElementById('org-projects').innerHTML = 
-                    formatSection(orgInfo.Key_Projects);
-                document.getElementById('org-team').innerHTML = 
-                    formatSection(orgInfo.Team_Members);
-            } catch (error) {
-                console.error('Error updating UI:', error);
-            }
-        }
-
-        function formatSection(content) {
-            if (!content) return 'No information available';
-            
-            if (Array.isArray(content)) {
-                if (content.length === 0) return 'No items available';
-                
-                return '<ul class="list-group list-group-flush">' + 
-                    content.map(item => `<li class="list-group-item px-0">${item}</li>`).join('') + 
-                    '</ul>';
-            }
-            return content;
-        }
-
-        // Load organization info on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listener to refresh button
-            document.getElementById('refresh-org-info').addEventListener('click', function() {
-                updateOrgInfo(true); // true means force refresh
-            });
-            
-            // Initial load of organization info
-            updateOrgInfo(false);
+            const refreshBtn = document.getElementById('refresh-org-info');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    refreshOrgInfo();
+                });
+            }
         });
+        
+        function refreshOrgInfo() {
+            // Show loading state
+            const refreshBtn = document.getElementById('refresh-org-info');
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise animate-spin"></i> Loading...';
+                refreshBtn.disabled = true;
+            }
+            
+            // Add animate-spin class if needed
+            if (!document.querySelector('style#spin-style')) {
+                const style = document.createElement('style');
+                style.id = 'spin-style';
+                style.textContent = `
+                    @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                    .animate-spin {
+                        animation: spin 1s linear infinite;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Call the correct endpoint with refresh=true
+            fetch(`/api/org-info?refresh=true&_=${Date.now()}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Refreshed organization info:', data);
+                    updateSidebarInfo(data);
+                })
+                .catch(error => {
+                    console.error('Error refreshing organization info:', error);
+                })
+                .finally(() => {
+                    // Reset button state
+                    if (refreshBtn) {
+                        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+                        refreshBtn.disabled = false;
+                    }
+                });
+        }
+        
+        function updateSidebarInfo(info) {
+            // Update organization overview
+            const overviewEl = document.getElementById('org-overview');
+            if (overviewEl && info.Organization_Overview) {
+                overviewEl.textContent = info.Organization_Overview;
+            }
+            
+            // Update projects list
+            const projectsEl = document.getElementById('org-projects');
+            if (projectsEl && info.Key_Projects) {
+                if (info.Key_Projects.length === 0) {
+                    projectsEl.innerHTML = '<p class="text-muted">No projects available</p>';
+                } else {
+                    projectsEl.innerHTML = '<ul class="list-group list-group-flush">' + 
+                        info.Key_Projects.map(project => 
+                            `<li class="list-group-item px-0">${project}</li>`
+                        ).join('') + 
+                        '</ul>';
+                }
+            }
+            
+            // Update team members list
+            const teamEl = document.getElementById('org-team');
+            if (teamEl && info.Team_Members) {
+                if (info.Team_Members.length === 0) {
+                    teamEl.innerHTML = '<p class="text-muted">No team members available</p>';
+                } else {
+                    teamEl.innerHTML = '<ul class="list-group list-group-flush">' + 
+                        info.Team_Members.map(member => 
+                            `<li class="list-group-item px-0">${member}</li>`
+                        ).join('') + 
+                        '</ul>';
+                }
+            }
+        }
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>
