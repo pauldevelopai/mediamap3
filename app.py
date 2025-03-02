@@ -881,6 +881,16 @@ def manage_chat(chat_id):
 def chat_history():
     return render_template('chats.html')
 
+@app.cli.command("reset-db")
+def reset_db():
+    """Reset the database tables."""
+    db_path = os.path.join(basedir, "instance", "media_analysis.db")
+    if os.path.exists(db_path):
+        os.remove(db_path)
+    with app.app_context():
+        db.create_all()
+    print("Database has been reset.")
+
 # Create database tables
 with app.app_context():
     db.create_all()
