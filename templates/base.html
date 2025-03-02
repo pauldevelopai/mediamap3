@@ -2,90 +2,217 @@
 <html>
 <head>
     <title>{% block title %}MediaMap{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Updated Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
         }
         .banner {
-            background-color: #007bff;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
             color: #fff;
-            width: 100%;
-            padding: 20px 0;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             text-align: center;
-            font-size: 22px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
         }
-        .banner-subtitle {
-            font-size: 18px;
-            font-weight: normal;
-            margin-top: 5px;
-        }
-        .main-container {
-            display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            gap: 20px;
-            padding: 20px;
-        }
-        .nav-bar {
-            width: 250px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-            height: calc(100vh - 40px);
-            position: sticky;
-            top: 20px;
+        .sidebar {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            height: calc(100vh - 200px);
             overflow-y: auto;
         }
-        .nav-links {
-            list-style: none;
-            padding: 0;
+        .content-area {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            height: calc(100vh - 200px);
+            overflow-y: auto;
         }
         .nav-link {
-            display: block;
-            color: #007bff;
-            text-decoration: none;
-            font-size: 16px;
-            margin-bottom: 10px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s;
+            color: #495057;
         }
         .nav-link:hover {
-            text-decoration: underline;
+            background-color: #f1f8ff;
+            color: #0d6efd;
         }
-        .content {
-            flex: 1;
-            min-width: 0;
+        .nav-link.active {
+            background-color: #e8f0fe;
+            color: #0d6efd;
+            font-weight: 500;
         }
+        .nav-link i {
+            margin-right: 8px;
+        }
+        .feedback-btn {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            width: 100%;
+            margin-top: 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .feedback-btn:hover {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        .sidebar-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+        .progress {
+            margin-bottom: 0.75rem;
+        }
+        {% block extra_css %}{% endblock %}
     </style>
 </head>
 <body>
-    <div class="banner">
-        MediaMap
-        <div class="banner-subtitle">Created by Develop AI</div>
+    <div class="banner text-center">
+        <h1 class="display-5 fw-bold">MediaMap</h1>
+        <p class="fs-5">Created by Develop AI</p>
     </div>
-    <div class="main-container">
-        <nav class="nav-bar">
-            <div class="nav-links">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/lessons-page" class="nav-link">Daily Lessons</a>
-                <a href="/map" class="nav-link">World Map</a>
-                <a href="/translate" class="nav-link">Language Translation</a>
-                <a href="/recommended-ai-tools" class="nav-link">Recommended AI Tools</a>
-                <a href="/generate-insights" class="nav-link">Generate Insights</a>
-                <a href="/your-info" class="nav-link">Your Info</a>
+    
+    <div class="container">
+        <div class="row g-4">
+            <!-- Left Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <nav class="d-flex flex-column">
+                        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                            <i class="bi bi-house-door"></i> Home
+                        </a>
+                        <a href="/lessons-page" class="nav-link {% if request.path == '/lessons-page' %}active{% endif %}">
+                            <i class="bi bi-journal-text"></i> Daily Lessons
+                        </a>
+                        <a href="/map" class="nav-link {% if request.path == '/map' %}active{% endif %}">
+                            <i class="bi bi-globe"></i> World Map
+                        </a>
+                        <a href="/translate" class="nav-link {% if request.path == '/translate' %}active{% endif %}">
+                            <i class="bi bi-translate"></i> Language Translation
+                        </a>
+                        <a href="/recommended-ai-tools" class="nav-link {% if request.path == '/recommended-ai-tools' %}active{% endif %}">
+                            <i class="bi bi-robot"></i> Recommended AI Tools
+                        </a>
+                        <a href="/generate-insights" class="nav-link {% if request.path == '/generate-insights' %}active{% endif %}">
+                            <i class="bi bi-lightbulb"></i> Generate Insights
+                        </a>
+                        <a href="/your-info" class="nav-link {% if request.path == '/your-info' %}active{% endif %}">
+                            <i class="bi bi-person"></i> Your Info
+                        </a>
+                    </nav>
+                    <hr>
+                    <a href="/feedback" class="btn btn-primary feedback-btn">
+                        <i class="bi bi-chat-dots"></i> Send Feedback
+                    </a>
+                </div>
             </div>
-        </nav>
-        <div class="content">
-            {% block content %}{% endblock %}
+            
+            <!-- Main Content -->
+            <div class="col-md-6">
+                <div class="content-area">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <h3>Name of Your Organisation</h3>
+                        <div id="org-overview">Paul Media</div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Key Projects</h3>
+                        <div id="org-projects">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0">Project 1</li>
+                                <li class="list-group-item px-0">Project 2</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>Team Members</h3>
+                        <div id="org-team">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item px-0">Team Member 1</li>
+                                <li class="list-group-item px-0">Team Member 2</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>AI Implementation Scores</h3>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" style="width: 85%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">Data Utilization: 85%</div>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">Automation Level: 70%</div>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 90%;" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100">AI Integration: 90%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function updateOrgInfo(refresh = false) {
+            const url = refresh ? '/synthesize?refresh=true' : '/synthesize';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update each section
+                        document.getElementById('org-overview').innerHTML = 
+                            formatSection(data.org_info.Organization_Overview);
+                        document.getElementById('org-projects').innerHTML = 
+                            formatSection(data.org_info.Key_Projects);
+                        document.getElementById('org-team').innerHTML = 
+                            formatSection(data.org_info.Team_Members);
+                        // Additional sections as needed
+                    } else {
+                        console.error('Error updating organization info:', data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function formatSection(content) {
+            if (Array.isArray(content)) {
+                return '<ul class="list-group list-group-flush">' + 
+                    content.map(item => `<li class="list-group-item px-0">${item}</li>`).join('') + 
+                    '</ul>';
+            }
+            return content;
+        }
+
+        // Load organization info on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateOrgInfo();
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html> 
