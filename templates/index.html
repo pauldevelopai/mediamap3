@@ -5,7 +5,8 @@
 {% block extra_css %}
 <style>
     .chat-messages {
-        height: calc(100vh - 320px);
+        height: 400px !important; /* Fixed height with !important to override any other styles */
+        max-height: 400px !important;
         overflow-y: auto;
         padding: 1rem;
         border-radius: 8px;
