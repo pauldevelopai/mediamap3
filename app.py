@@ -12,6 +12,7 @@ import requests
 from auth import auth
 import time
 import threading
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -232,32 +233,37 @@ def analyze_media():
         }), 500
 
 @app.route('/chat', methods=['POST'])
-@login_required
 def chat():
-    data = request.json
-    message = data.get('message', '')
-    chat_id = data.get('chat_id')
+    message = request.json.get('message', '')
+    chat_id = request.json.get('chat_id', None)
     
-    if not chat_id:
-        # Create a new chat
-        chat_id = str(int(time.time()))  # Temporary ID until saved to DB
-        active_chats[chat_id] = {
-            'messages': []
-        }
+    if not message:
+        return jsonify({
+            'success': False,
+            'error': 'No message provided'
+        }), 400
     
-    # Ensure chat exists
-    if chat_id not in active_chats:
-        # Try to load from database if it has a numeric ID
-        if chat_id.isdigit():
-            chat = Chat.query.get(int(chat_id))
-            if chat:
-                active_chats[chat_id] = {
-                    'messages': [msg.to_dict() for msg in chat.messages]
-                }
-            else:
-                active_chats[chat_id] = {'messages': []}
+    # Get or create a chat
+    if chat_id:
+        if chat_id in active_chats:
+            chat_data = active_chats[chat_id]
         else:
-            active_chats[chat_id] = {'messages': []}
+            try:
+                # Try to load from database
+                chat = db.session.get(Chat, int(chat_id))
+                if chat:
+                    chat_data = {
+                        'messages': [msg.to_dict() for msg in chat.messages]
+                    }
+                    active_chats[chat_id] = chat_data
+                else:
+                    active_chats[chat_id] = {'messages': []}
+            except:
+                active_chats[chat_id] = {'messages': []}
+    else:
+        # Generate a temporary ID for the new chat
+        chat_id = str(uuid.uuid4())
+        active_chats[chat_id] = {'messages': []}
     
     # Add user message
     active_chats[chat_id]['messages'].append({
@@ -265,8 +271,8 @@ def chat():
         'content': message
     })
     
-    # Process with AI and get response
-    response = process_with_ai(message)
+    # Process with AI and get response - provide chat history for context
+    response = process_with_ai(message, active_chats[chat_id]['messages'])
     
     # Add assistant response
     active_chats[chat_id]['messages'].append({
@@ -309,10 +315,36 @@ def get_chats():
     
     return jsonify(chats)
 
-def process_with_ai(message):
-    """Process user message with AI and return response"""
-    # Replace with your actual AI processing logic
-    return f"This is a simulated response to: {message}"
+def process_with_ai(message, chat_history=None):
+    """Process user message with OpenAI and return response"""
+    try:
+        # Build the messages array for context
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT_CHAT}
+        ]
+        
+        # Add chat history for context if available
+        if chat_history:
+            for msg in chat_history:
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+        
+        # Add the current user message
+        messages.append({"role": "user", "content": message})
+        
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages
+        )
+        
+        # Extract and return the response text
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error processing with AI: {str(e)}")
+        return f"Sorry, I encountered an error: {str(e)}"
 
 @app.route('/synthesize', methods=['GET'])
 @login_required
