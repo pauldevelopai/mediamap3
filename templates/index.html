@@ -48,6 +48,8 @@
 
 {% block extra_scripts %}
 <script>
+    let currentChatId = null;
+    
     function sendMessage() {
         const input = document.getElementById('chat-input');
         const message = input.value.trim();
@@ -93,9 +95,6 @@
         const chatMessages = document.getElementById('chat-messages');
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
-    // Keep existing JavaScript functions
-    let currentChatId = null;
     
     document.getElementById('chat-input').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -116,14 +115,15 @@
             chatMessages.innerHTML = '';
             
             if (chats.length > 0) {
-                const latestChat = chats[chats.length - 1];
+                // Use the most recent chat
+                const latestChat = chats[0];
                 currentChatId = latestChat.id;
                 
                 latestChat.messages.forEach(msg => {
                     appendMessage(msg.role, msg.content);
                 });
                 
-                // Ensure we scroll to the bottom after all messages are loaded
+                // Scroll to bottom after loading messages
                 setTimeout(scrollToBottom, 100);
             }
         });

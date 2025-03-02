@@ -10,6 +10,8 @@ from datetime import datetime
 import urllib.parse
 import requests
 from auth import auth
+import time
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -66,6 +68,83 @@ SYSTEM_PROMPT_SYNTHESIS = """You are an organizational analyst. Extract key info
 Return the information in JSON format with these categories. Only include information that has been explicitly mentioned or can be directly inferred."""
 
 app.register_blueprint(auth)
+
+# In-memory storage for active chats
+active_chats = {}
+last_save_time = {}
+SAVE_INTERVAL = 60  # Save to database every 60 seconds
+
+# Create a background thread for periodic saving
+def periodic_save_chats():
+    while True:
+        with app.app_context():
+            current_time = time.time()
+            chats_to_save = []
+            
+            for chat_id, chat_data in active_chats.items():
+                if chat_id not in last_save_time or (current_time - last_save_time[chat_id]) > SAVE_INTERVAL:
+                    chats_to_save.append((chat_id, chat_data))
+            
+            for chat_id, chat_data in chats_to_save:
+                save_chat_to_db(chat_id, chat_data)
+                last_save_time[chat_id] = current_time
+                
+        time.sleep(SAVE_INTERVAL)
+
+# Start the background thread
+save_thread = threading.Thread(target=periodic_save_chats, daemon=True)
+save_thread.start()
+
+def save_chat_to_db(chat_id, chat_data):
+    """Save or update a chat in the database"""
+    try:
+        # Check if the chat already exists in the database
+        chat = Chat.query.get(int(chat_id)) if chat_id.isdigit() else None
+        
+        if not chat:
+            # Create a new chat if it doesn't exist
+            chat = Chat()
+            # Only add user_id if user is authenticated
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                chat.user_id = current_user.id
+            db.session.add(chat)
+            db.session.flush()  # Get the ID
+            
+            # Update the chat_id in memory to match the database ID
+            if chat_id in active_chats:
+                active_chats[str(chat.id)] = active_chats.pop(chat_id)
+                last_save_time[str(chat.id)] = last_save_time.pop(chat_id, time.time())
+        
+        # If there are messages, add them
+        if 'messages' in chat_data:
+            # Get existing message IDs
+            existing_msg_ids = [msg.id for msg in chat.messages]
+            
+            for msg_data in chat_data['messages']:
+                # Skip if this message is already in the database
+                if 'id' in msg_data and msg_data['id'] in existing_msg_ids:
+                    continue
+                    
+                msg = Message(
+                    chat_id=chat.id,
+                    role=msg_data['role'],
+                    content=msg_data['content']
+                )
+                db.session.add(msg)
+        
+        # Generate a title if none exists
+        if not chat.title and len(chat_data.get('messages', [])) > 0:
+            first_msg = next((m for m in chat_data.get('messages', []) if m['role'] == 'user'), None)
+            if first_msg:
+                # Use the first 50 characters of the first user message as title
+                chat.title = first_msg['content'][:50] + ("..." if len(first_msg['content']) > 50 else "")
+        
+        db.session.commit()
+        return chat.id
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving chat to database: {e}")
+        return None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -155,92 +234,85 @@ def analyze_media():
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
-    try:
-        data = request.json
-        message_content = data.get('message', '')
-        
-        # Check if this is a fact being shared
-        if "tell us facts about" in message_content.lower():
-            # Store as an organization fact
-            new_fact = OrganizationFact(
-                user_id=current_user.id,
-                fact=message_content
-            )
-            db.session.add(new_fact)
-            db.session.commit()
-        
-        # Continue with regular chat processing...
-        chat_id = data.get('chat_id')
-        
-        # Get or create chat
-        if not chat_id:
-            chat = Chat(user_id=current_user.id)
-            db.session.add(chat)
-            db.session.commit()
-            chat_id = chat.id
+    data = request.json
+    message = data.get('message', '')
+    chat_id = data.get('chat_id')
+    
+    if not chat_id:
+        # Create a new chat
+        chat_id = str(int(time.time()))  # Temporary ID until saved to DB
+        active_chats[chat_id] = {
+            'messages': []
+        }
+    
+    # Ensure chat exists
+    if chat_id not in active_chats:
+        # Try to load from database if it has a numeric ID
+        if chat_id.isdigit():
+            chat = Chat.query.get(int(chat_id))
+            if chat:
+                active_chats[chat_id] = {
+                    'messages': [msg.to_dict() for msg in chat.messages]
+                }
+            else:
+                active_chats[chat_id] = {'messages': []}
         else:
-            chat = Chat.query.get(chat_id)
-            if not chat or chat.user_id != current_user.id:
-                raise ValueError("Invalid chat ID")
-        
-        # Save user message
-        user_msg = Message(
-            chat_id=chat_id,
-            role='user',
-            content=message_content
-        )
-        db.session.add(user_msg)
-        
-        # Prepare messages for OpenAI
-        chat_messages = [{"role": msg.role, "content": msg.content} 
-                        for msg in chat.messages]
-        chat_messages.insert(0, {
-            "role": "system",
-            "content": SYSTEM_PROMPT_CHAT
-        })
-        
-        # Get AI response
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=chat_messages
-        )
-        
-        ai_response = response.choices[0].message.content
-        
-        # Save AI response
-        ai_msg = Message(
-            chat_id=chat_id,
-            role='assistant',
-            content=ai_response
-        )
-        db.session.add(ai_msg)
-        db.session.commit()
-        
-        return jsonify({
-            "success": True,
-            "response": ai_response,
-            "chat_id": chat_id
-        })
-        
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+            active_chats[chat_id] = {'messages': []}
+    
+    # Add user message
+    active_chats[chat_id]['messages'].append({
+        'role': 'user',
+        'content': message
+    })
+    
+    # Process with AI and get response
+    response = process_with_ai(message)
+    
+    # Add assistant response
+    active_chats[chat_id]['messages'].append({
+        'role': 'assistant',
+        'content': response
+    })
+    
+    # Schedule immediate save for this chat
+    save_chat_to_db(chat_id, active_chats[chat_id])
+    last_save_time[chat_id] = time.time()
+    
+    return jsonify({
+        'success': True,
+        'response': response,
+        'chat_id': chat_id
+    })
 
-@app.route('/chats')
-@login_required
+@app.route('/chats', methods=['GET'])
 def get_chats():
-    chats = Chat.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{
-        'id': chat.id,
-        'created_at': chat.created_at,
-        'messages': [{
-            'role': msg.role,
-            'content': msg.content,
-            'created_at': msg.created_at
-        } for msg in chat.messages]
-    } for chat in chats])
+    # Combine active chats with saved chats from the database
+    chats = []
+    
+    # Get chats from database
+    db_chats = Chat.query.order_by(Chat.updated_at.desc()).all()
+    for chat in db_chats:
+        chat_dict = chat.to_dict()
+        # If this chat is active, use the in-memory version
+        if str(chat.id) in active_chats:
+            chat_dict['messages'] = active_chats[str(chat.id)]['messages']
+        chats.append(chat_dict)
+    
+    # Add any active chats that aren't in the database yet
+    for chat_id, chat_data in active_chats.items():
+        if not chat_id.isdigit() or not any(c['id'] == int(chat_id) for c in chats):
+            chats.append({
+                'id': chat_id,
+                'messages': chat_data['messages'],
+                'created_at': datetime.now().isoformat()
+            })
+    
+    return jsonify(chats)
+
+def process_with_ai(message):
+    """Process user message with AI and return response"""
+    # Replace with your actual AI processing logic
+    return f"This is a simulated response to: {message}"
 
 @app.route('/synthesize', methods=['GET'])
 @login_required
@@ -783,6 +855,31 @@ def feedback():
         
     # For GET requests, just render the template
     return render_template('feedback.html')
+
+@app.route('/chat/<chat_id>', methods=['GET', 'DELETE'])
+def manage_chat(chat_id):
+    if request.method == 'GET':
+        # Get a specific chat
+        chat = Chat.query.get_or_404(int(chat_id))
+        return jsonify(chat.to_dict())
+    
+    elif request.method == 'DELETE':
+        # Delete a chat
+        chat = Chat.query.get_or_404(int(chat_id))
+        
+        # Remove from active chats if present
+        if str(chat_id) in active_chats:
+            del active_chats[str(chat_id)]
+        
+        # Remove from database
+        db.session.delete(chat)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+
+@app.route('/chat-history')
+def chat_history():
+    return render_template('chats.html')
 
 # Create database tables
 with app.app_context():

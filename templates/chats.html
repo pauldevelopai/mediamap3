@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Chat History - MediaMap{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Chat History</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="list-group chat-list" id="chat-list">
+            <!-- Chat entries will be loaded here -->
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" id="selected-chat-title">Select a chat</h5>
+                <button class="btn btn-sm btn-outline-danger" id="delete-chat-btn" style="display: none;">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </div>
+            <div id="selected-chat-messages" class="card-body" style="height: 60vh; overflow-y: auto;">
+                <p class="text-center text-muted">Select a chat from the list to view the conversation</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let selectedChatId = null;
+    
+    // Load all chats on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAllChats();
+        
+        // Set up delete button
+        document.getElementById('delete-chat-btn').addEventListener('click', function() {
+            if (selectedChatId) {
+                deleteChat(selectedChatId);
+            }
+        });
+    });
+    
+    function loadAllChats() {
+        fetch('/chats')
+        .then(response => response.json())
+        .then(chats => {
+            const chatList = document.getElementById('chat-list');
+            chatList.innerHTML = '';
+            
+            if (chats.length === 0) {
+                chatList.innerHTML = '<p class="text-center text-muted p-3">No chat history found</p>';
+                return;
+            }
+            
+            chats.forEach(chat => {
+                const title = chat.title || 'Untitled Chat';
+                const date = new Date(chat.created_at).toLocaleDateString();
+                const time = new Date(chat.created_at).toLocaleTimeString();
+                
+                // Get the first few characters of the first message for preview
+                let preview = '';
+                if (chat.messages && chat.messages.length > 0) {
+                    const firstMsg = chat.messages[0];
+                    preview = firstMsg.content.substring(0, 60) + (firstMsg.content.length > 60 ? '...' : '');
+                }
+                
+                const chatItem = document.createElement('a');
+                chatItem.href = '#';
+                chatItem.className = 'list-group-item list-group-item-action';
+                chatItem.dataset.chatId = chat.id;
+                chatItem.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">${title}</h5>
+                        <small>${date}</small>
+                    </div>
+                    <p class="mb-1">${preview}</p>
+                    <small>${time}</small>
+                `;
+                
+                chatItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    document.querySelectorAll('.list-group-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Load chat messages
+                    selectedChatId = this.dataset.chatId;
+                    loadChatMessages(selectedChatId);
+                    
+                    // Show delete button
+                    document.getElementById('delete-chat-btn').style.display = 'block';
+                });
+                
+                chatList.appendChild(chatItem);
+            });
+        });
+    }
+    
+    function loadChatMessages(chatId) {
+        fetch(`/chat/${chatId}`)
+        .then(response => response.json())
+        .then(chat => {
+            const messagesContainer = document.getElementById('selected-chat-messages');
+            messagesContainer.innerHTML = '';
+            
+            document.getElementById('selected-chat-title').textContent = chat.title || 'Untitled Chat';
+            
+            chat.messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.role}-message`;
+                messageDiv.innerHTML = `<p>${msg.content}</p>`;
+                messagesContainer.appendChild(messageDiv);
+            });
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+    }
+    
+    function deleteChat(chatId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This chat will be permanently deleted!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/chat/${chatId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(
+                            'Deleted!',
+                            'The chat has been deleted.',
+                            'success'
+                        );
+                        
+                        // Reset selected chat
+                        selectedChatId = null;
+                        document.getElementById('selected-chat-title').textContent = 'Select a chat';
+                        document.getElementById('selected-chat-messages').innerHTML = 
+                            '<p class="text-center text-muted">Select a chat from the list to view the conversation</p>';
+                        document.getElementById('delete-chat-btn').style.display = 'none';
+                        
+                        // Reload chat list
+                        loadAllChats();
+                    } else {
+                        Swal.fire(
+                            'Error!',
+                            data.error || 'Failed to delete the chat.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}
