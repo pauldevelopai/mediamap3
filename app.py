@@ -758,6 +758,32 @@ def admin_dashboard():
     # Admin dashboard logic here
     return render_template('admin_dashboard.html')
 
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    if request.method == 'POST':
+        # In a real application, you would process the form data here
+        # For example, save to database or send email to admin
+        name = request.form.get('name')
+        email = request.form.get('email')
+        feedback_type = request.form.get('feedbackType')
+        subject = request.form.get('subject')
+        message = request.form.get('message')
+        followup = 'followup' in request.form
+        
+        # Process the feedback (e.g., save to database, send email)
+        # ...
+        
+        # For AJAX requests, return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True})
+        
+        # For regular form submissions, redirect with a flash message
+        flash('Thank you for your feedback!', 'success')
+        return redirect(url_for('feedback'))
+        
+    # For GET requests, just render the template
+    return render_template('feedback.html')
+
 # Create database tables
 with app.app_context():
     db.create_all()

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Send Feedback - MediaMap{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Send Feedback</h1>
+<p class="text-muted mb-4">We value your input! Please share your thoughts, suggestions, or report any issues you've encountered with MediaMap.</p>
+
+<div class="card">
+    <div class="card-body">
+        <form id="feedbackForm" method="POST" action="{{ url_for('feedback') }}">
+            <div class="mb-3">
+                <label for="name" class="form-label">Your Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <div class="form-text">We'll never share your email with anyone else.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="feedbackType" class="form-label">Feedback Type</label>
+                <select class="form-select" id="feedbackType" name="feedbackType">
+                    <option value="suggestion">Suggestion</option>
+                    <option value="issue">Report Issue</option>
+                    <option value="question">Question</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="subject" class="form-label">Subject</label>
+                <input type="text" class="form-control" id="subject" name="subject" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="message" class="form-label">Your Feedback</label>
+                <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+            </div>
+            
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="followup" name="followup">
+                <label class="form-check-label" for="followup">
+                    I'd like to receive a follow-up response
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-send"></i> Submit Feedback
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Collect form data
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            feedbackType: document.getElementById('feedbackType').value,
+            subject: document.getElementById('subject').value,
+            message: document.getElementById('message').value,
+            followup: document.getElementById('followup').checked
+        };
+        
+        // Show loading state
+        Swal.fire({
+            title: 'Sending feedback...',
+            text: 'Please wait',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // In a real application, you would send this data to your server
+        // For now, we'll simulate a server response
+        setTimeout(() => {
+            // Simulate successful submission
+            Swal.fire({
+                icon: 'success',
+                title: 'Thank You!',
+                text: 'Your feedback has been submitted successfully.',
+                confirmButtonColor: '#0d6efd'
+            }).then(() => {
+                // Reset the form after successful submission
+                document.getElementById('feedbackForm').reset();
+            });
+            
+            // In a real application, you would replace this with actual form submission:
+            /*
+            fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thank You!',
+                        text: 'Your feedback has been submitted successfully.'
+                    });
+                    document.getElementById('feedbackForm').reset();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.error || 'Something went wrong!'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'There was an error submitting your feedback.'
+                });
+            });
+            */
+        }, 1500);
+    });
+</script>
+{% endblock %}
