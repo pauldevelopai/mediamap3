@@ -2,30 +2,112 @@
 
 {% block title %}Chat History - MediaMap{% endblock %}
 
-{% block content %}
-<h1 class="mb-4">Chat History</h1>
+{% block extra_css %}
+<style>
+    .chat-list {
+        height: calc(100vh - 200px);
+        overflow-y: auto;
+        border-radius: 10px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    }
+    
+    .list-group-item.active {
+        background-color: #e8f0fe;
+        color: #0d6efd;
+        border-color: #d2e3fc;
+    }
+    
+    .chat-card {
+        border-radius: 10px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        height: calc(100vh - 200px);
+    }
+    
+    .chat-card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+    
+    .message {
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        max-width: 75%;
+        position: relative;
+    }
+    
+    .user-message {
+        background-color: #e8f0fe;
+        color: #0d6efd;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .assistant-message {
+        background-color: #f1f3f5;
+        color: #495057;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message p {
+        margin-bottom: 0;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 5px;
+        text-align: right;
+    }
+    
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="list-group chat-list" id="chat-list">
-            <!-- Chat entries will be loaded here -->
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Chat History</h1>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="list-group chat-list" id="chat-list">
+                <!-- Chat entries will be loaded here -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0" id="selected-chat-title">Select a chat</h5>
-                <button class="btn btn-sm btn-outline-danger" id="delete-chat-btn" style="display: none;">
-                    <i class="bi bi-trash"></i> Delete
-                </button>
-            </div>
-            <div id="selected-chat-messages" class="card-body" style="height: 60vh; overflow-y: auto;">
-                <p class="text-center text-muted">Select a chat from the list to view the conversation</p>
+        <div class="col-md-8">
+            <div class="card chat-card">
+                <div class="card-header chat-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="selected-chat-title">Select a chat</h5>
+                    <button class="btn btn-sm btn-outline-danger" id="delete-chat-btn" style="display: none;">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+                <div id="selected-chat-messages" class="card-body" style="overflow-y: auto;">
+                    <div class="empty-state">
+                        <i class="bi bi-chat-square-text"></i>
+                        <p>Select a chat from the list to view the conversation</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -56,14 +138,18 @@
             chatList.innerHTML = '';
             
             if (chats.length === 0) {
-                chatList.innerHTML = '<p class="text-center text-muted p-3">No chat history found</p>';
+                chatList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-chat-square"></i>
+                        <p>No chat history found</p>
+                    </div>`;
                 return;
             }
             
             chats.forEach(chat => {
                 const title = chat.title || 'Untitled Chat';
                 const date = new Date(chat.created_at).toLocaleDateString();
-                const time = new Date(chat.created_at).toLocaleTimeString();
+                const time = new Date(chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
                 // Get the first few characters of the first message for preview
                 let preview = '';
@@ -81,8 +167,8 @@
                         <h5 class="mb-1">${title}</h5>
                         <small>${date}</small>
                     </div>
-                    <p class="mb-1">${preview}</p>
-                    <small>${time}</small>
+                    <p class="mb-1 text-truncate">${preview}</p>
+                    <small class="text-muted">${time}</small>
                 `;
                 
                 chatItem.addEventListener('click', function(e) {
@@ -96,9 +182,12 @@
                     // Add active class to clicked item
                     this.classList.add('active');
                     
-                    // Load chat messages
+                    // Load chat detail directly from the chat object
                     selectedChatId = this.dataset.chatId;
-                    loadChatMessages(selectedChatId);
+                    const selectedChat = chats.find(c => c.id == selectedChatId);
+                    if (selectedChat) {
+                        displayChatMessages(selectedChat);
+                    }
                     
                     // Show delete button
                     document.getElementById('delete-chat-btn').style.display = 'block';
@@ -109,24 +198,52 @@
         });
     }
     
+    function displayChatMessages(chat) {
+        const messagesContainer = document.getElementById('selected-chat-messages');
+        messagesContainer.innerHTML = '';
+        
+        document.getElementById('selected-chat-title').textContent = chat.title || 'Untitled Chat';
+        
+        if (!chat.messages || chat.messages.length === 0) {
+            messagesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="bi bi-chat-square-text"></i>
+                    <p>No messages in this conversation</p>
+                </div>`;
+            return;
+        }
+        
+        chat.messages.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${msg.role}-message`;
+            
+            // Format the message content for proper display
+            const formattedContent = msg.content.replace(/\n/g, '<br>');
+            
+            messageDiv.innerHTML = `
+                <p>${formattedContent}</p>
+                <div class="message-time">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+        });
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
     function loadChatMessages(chatId) {
         fetch(`/chat/${chatId}`)
         .then(response => response.json())
         .then(chat => {
-            const messagesContainer = document.getElementById('selected-chat-messages');
-            messagesContainer.innerHTML = '';
-            
-            document.getElementById('selected-chat-title').textContent = chat.title || 'Untitled Chat';
-            
-            chat.messages.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.role}-message`;
-                messageDiv.innerHTML = `<p>${msg.content}</p>`;
-                messagesContainer.appendChild(messageDiv);
+            displayChatMessages(chat);
+        })
+        .catch(error => {
+            console.error('Error loading chat messages:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to load chat messages. Please try again.'
             });
-            
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         });
     }
     
@@ -156,8 +273,11 @@
                         // Reset selected chat
                         selectedChatId = null;
                         document.getElementById('selected-chat-title').textContent = 'Select a chat';
-                        document.getElementById('selected-chat-messages').innerHTML = 
-                            '<p class="text-center text-muted">Select a chat from the list to view the conversation</p>';
+                        document.getElementById('selected-chat-messages').innerHTML = `
+                            <div class="empty-state">
+                                <i class="bi bi-chat-square-text"></i>
+                                <p>Select a chat from the list to view the conversation</p>
+                            </div>`;
                         document.getElementById('delete-chat-btn').style.display = 'none';
                         
                         // Reload chat list

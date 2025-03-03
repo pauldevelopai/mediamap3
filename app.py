@@ -419,52 +419,80 @@ def chat():
         'chat_id': chat_id
     })
 
-@app.route('/chats', methods=['GET'])
+@app.route('/chats')
+@login_required
 def get_chats():
-    # Combine active chats with saved chats from the database
-    chats = []
-    
-    # Get chats from database
-    db_chats = Chat.query.order_by(Chat.updated_at.desc()).all()
-    for chat in db_chats:
-        chat_dict = chat.to_dict()
-        # If this chat is active, use the in-memory version
-        if str(chat.id) in active_chats:
-            chat_dict['messages'] = active_chats[str(chat.id)]['messages']
-        chats.append(chat_dict)
-    
-    # Add any active chats that aren't in the database yet
-    for chat_id, chat_data in active_chats.items():
-        if not chat_id.isdigit() or not any(c['id'] == int(chat_id) for c in chats):
-            chats.append({
-                'id': chat_id,
-                'messages': chat_data['messages'],
-                'created_at': datetime.now().isoformat()
-            })
-    
-    return jsonify(chats)
+    """Render the chat history page"""
+    return render_template('chats.html')
 
 @app.route('/api/user_chats')
-def get_user_chats():
-    """Get all chats for the current user"""
-    try:
-        # Only get chats for the current user if authenticated
-        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
-            chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.updated_at.desc()).all()
-        else:
-            # Return empty list for non-authenticated users
-            chats = []
-            
-        return jsonify({
-            'success': True,
-            'chats': [chat.to_dict() for chat in chats]
+@login_required
+def api_user_chats():
+    """API endpoint to get user's chat history"""
+    # Get chats from database
+    chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
+    
+    # Convert to JSON
+    chats_json = []
+    for chat in chats:
+        messages = [
+            {
+                'id': msg.id,
+                'role': msg.role,
+                'content': msg.content,
+                'created_at': msg.created_at.isoformat()
+            } for msg in chat.messages
+        ]
+        
+        chats_json.append({
+            'id': chat.id,
+            'title': chat.title,
+            'created_at': chat.created_at.isoformat(),
+            'updated_at': chat.updated_at.isoformat(),
+            'messages': messages
         })
+    
+    return jsonify(chats_json)
+
+@app.route('/chat/<int:chat_id>', methods=['GET'])
+@login_required
+def get_chat(chat_id):
+    """Get a specific chat"""
+    chat = Chat.query.filter_by(id=chat_id, user_id=current_user.id).first_or_404()
+    
+    # Convert to JSON
+    messages = [
+        {
+            'id': msg.id,
+            'role': msg.role,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat()
+        } for msg in chat.messages
+    ]
+    
+    chat_json = {
+        'id': chat.id,
+        'title': chat.title,
+        'created_at': chat.created_at.isoformat(),
+        'updated_at': chat.updated_at.isoformat(),
+        'messages': messages
+    }
+    
+    return jsonify(chat_json)
+
+@app.route('/chat/<int:chat_id>', methods=['DELETE'])
+@login_required
+def delete_chat(chat_id):
+    """Delete a specific chat"""
+    chat = Chat.query.filter_by(id=chat_id, user_id=current_user.id).first_or_404()
+    
+    try:
+        db.session.delete(chat)
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
-        print(f"Error getting chats: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
 
 def process_with_ai(message, chat_history=None):
     """Process user message with OpenAI and return response"""
@@ -1190,162 +1218,14 @@ def feedback():
     # For GET requests, just render the template
     return render_template('feedback.html')
 
-@app.route('/chat/<chat_id>', methods=['GET', 'DELETE'])
-def manage_chat(chat_id):
-    if request.method == 'GET':
-        # Get a specific chat
-        chat = Chat.query.get_or_404(int(chat_id))
-        return jsonify(chat.to_dict())
-    
-    elif request.method == 'DELETE':
-        # Delete a chat
-        chat = Chat.query.get_or_404(int(chat_id))
-        
-        # Remove from active chats if present
-        if str(chat_id) in active_chats:
-            del active_chats[str(chat_id)]
-        
-        # Remove from database
-        db.session.delete(chat)
-        db.session.commit()
-        
-        return jsonify({'success': True})
-
-@app.route('/chat-history')
-def chat_history():
-    return render_template('chats.html')
-
-@app.route('/api/org-info', methods=['GET'])
-def get_org_info():
-    """Get organization info for the current user"""
-    refresh = request.args.get('refresh', 'false').lower() == 'true'
-    print(f"📊 /api/org-info called with refresh={refresh}")
-    
-    user_id = current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None
-    
-    # Generic response for non-authenticated users
-    if not user_id:
-        return jsonify({
-            "Organization_Overview": "Please log in to view organization info",
-            "Key_Projects": [],
-            "Team_Members": []
-        })
-    
-    try:
-        # Check for existing info first (unless refresh is requested)
-        if not refresh:
-            existing_info = OrganizationInfo.query.filter_by(user_id=user_id).first()
-            if existing_info and existing_info.org_info:
-                try:
-                    org_data = json.loads(existing_info.org_info)
-                    return jsonify(org_data)
-                except Exception:
-                    # If JSON parsing fails, continue to regenerate
-                    pass
-        
-        # If refresh requested or no existing info, generate new info by analyzing chats
-        print(f"⭐ Refreshing organization info for user {current_user.username}")
-        
-        # Get user's chats
-        chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.updated_at.desc()).limit(10).all()
-        print(f"Found {len(chats)} chats for analysis")
-        
-        # Extract messages
-        messages = []
-        for chat in chats:
-            chat_messages = Message.query.filter_by(chat_id=chat.id).all()
-            messages.extend([msg.content for msg in chat_messages])
-        
-        print(f"Extracted {len(messages)} messages for analysis")
-        
-        # Default info in case AI fails
-        username = current_user.username if hasattr(current_user, 'username') else "User"
-        default_info = {
-            "Organization_Overview": f"{username}'s Organization",
-            "Key_Projects": ["Current project"],
-            "Team_Members": [f"{username}"]
-        }
-        
-        # If we have messages, analyze them with OpenAI
-        if messages:
-            content = "\n".join(messages)
-            
-            try:
-                # Call OpenAI API to extract organization info
-                print("Calling OpenAI to analyze messages...")
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": """You are an expert at extracting organization details from conversations.
-                        Extract ONLY the following information:
-                        1. The exact organization name with no additional words or phrases
-                        2. Key projects mentioned
-                        3. Team members mentioned
-                        
-                        Return ONLY a clean JSON object with these keys:
-                        - Organization_Overview: a string with only the organization name
-                        - Key_Projects: an array of project names
-                        - Team_Members: an array of team member names
-                        
-                        Example good output:
-                        {"Organization_Overview": "Acme Inc", "Key_Projects": ["Website Redesign", "App Launch"], "Team_Members": ["John", "Sarah"]}
-                        
-                        IMPORTANT: If "TOTAL MEDIA" is mentioned as the company name, use EXACTLY that string with no additional text."""},
-                        {"role": "user", "content": f"Extract organization details from this conversation: {content[:4000]}"}
-                    ],
-                    temperature=0,
-                    response_format={"type": "json_object"}
-                )
-                
-                # Extract the response
-                org_info_text = response.choices[0].message.content
-                print(f"OpenAI returned: {org_info_text[:100]}...")
-                
-                try:
-                    # Parse the JSON response
-                    org_data = json.loads(org_info_text)
-                    
-                    # Final cleanup on organization name
-                    if "Organization_Overview" in org_data:
-                        org_name = org_data["Organization_Overview"]
-                        
-                        # Clean up any extra words that might be in the organization name
-                        extra_phrases = ["that's great", "that is great", "that's good", "that is good", "is called", "called"]
-                        for phrase in extra_phrases:
-                            if phrase in org_name.lower():
-                                # Split and keep only the part before the phrase
-                                parts = re.split(re.escape(phrase), org_name, flags=re.IGNORECASE)
-                                org_name = parts[0].strip()
-                        
-                        # Update the clean org name
-                        org_data["Organization_Overview"] = org_name
-                    
-                    # Save to database
-                    org_info = OrganizationInfo.query.filter_by(user_id=user_id).first()
-                    if not org_info:
-                        org_info = OrganizationInfo(user_id=user_id)
-                        db.session.add(org_info)
-                    
-                    org_info.org_info = json.dumps(org_data)
-                    org_info.updated_at = datetime.now(timezone.utc)
-                    db.session.commit()
-                    
-                    print(f"✅ Saved organization info: {org_data}")
-                    return jsonify(org_data)
-                    
-                except json.JSONDecodeError:
-                    print("Failed to parse JSON from OpenAI response")
-                    return jsonify(default_info)
-                    
-            except Exception as api_error:
-                print(f"Error calling OpenAI API: {str(api_error)}")
-                return jsonify(default_info)
-        
-        return jsonify(default_info)
-        
-    except Exception as e:
-        print(f"Error in get_org_info: {str(e)}")
-        return jsonify(default_info)
+@app.route('/content-calendar')
+@login_required
+def content_calendar():
+    """Content Calendar page for ContentFlow"""
+    if session.get('platform') != 'contentflow':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    return render_template('content_calendar.html', hide_right_sidebar=True)
 
 @app.cli.command("reset-db")
 def reset_db():
@@ -1387,15 +1267,6 @@ def reset_db():
 # Create database tables
 with app.app_context():
     db.create_all()
-
-@app.route('/content-calendar')
-@login_required
-def content_calendar():
-    """Content Calendar page for ContentFlow"""
-    if session.get('platform') != 'contentflow':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
-    return render_template('content_calendar.html', hide_right_sidebar=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 

@@ -256,8 +256,8 @@
                                 <a href="/your-info" class="nav-link {% if request.path == '/your-info' %}active{% endif %}">
                                     <i class="bi bi-person"></i> Your Info
                                 </a>
-                                <a href="/chats" class="nav-link {% if request.path == '/chats' %}active{% endif %}">
-                                    <i class="bi bi-chat-left-text"></i> Chat History
+                                <a href="/chats" class="nav-link {% if request.path == '/chats' %}active{% endif %}" href="{{ url_for('get_chats') }}">
+                                    <i class="bi bi-chat-text"></i> Chat History
                                 </a>
                             </nav>
                             <hr>
