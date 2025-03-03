@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Media Analysis AI</title>
+    <title>Login - {{ platform|capitalize }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,7 +17,11 @@
             flex-direction: column;
         }
         .banner {
-            background-color: #007bff;
+            background-color: 
+            {% if platform == 'mediamap' %}#007bff
+            {% elif platform == 'guardpass' %}#28a745
+            {% elif platform == 'contentflow' %}#17a2b8
+            {% else %}#007bff{% endif %};
             color: #fff;
             width: 100%;
             padding: 20px 0;
@@ -55,7 +61,11 @@
             box-sizing: border-box;
         }
         button {
-            background-color: #007bff;
+            background-color: 
+            {% if platform == 'mediamap' %}#007bff
+            {% elif platform == 'guardpass' %}#28a745
+            {% elif platform == 'contentflow' %}#17a2b8
+            {% else %}#007bff{% endif %};
             color: white;
             padding: 10px 15px;
             border: none;
@@ -64,28 +74,60 @@
             width: 100%;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: 
+            {% if platform == 'mediamap' %}#0056b3
+            {% elif platform == 'guardpass' %}#218838
+            {% elif platform == 'contentflow' %}#138496
+            {% else %}#0056b3{% endif %};
         }
         p {
             margin-top: 20px;
             color: #666;
         }
         a {
-            color: #007bff;
+            color: 
+            {% if platform == 'mediamap' %}#007bff
+            {% elif platform == 'guardpass' %}#28a745
+            {% elif platform == 'contentflow' %}#17a2b8
+            {% else %}#007bff{% endif %};
             text-decoration: none;
         }
         a:hover {
             text-decoration: underline;
         }
+        .platform-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .back-link {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="banner">
-        MediaMap
+        {% if platform == 'mediamap' %}
+            <i class="bi bi-globe"></i> MediaMap
+        {% elif platform == 'guardpass' %}
+            <i class="bi bi-shield-fill"></i> GuardPass
+        {% elif platform == 'contentflow' %}
+            <i class="bi bi-collection-play"></i> ContentFlow
+        {% else %}
+            Media Suite
+        {% endif %}
         <div class="banner-subtitle">Created by Develop AI</div>
     </div>
     <div class="container">
-        <h1>Login</h1>
+        <div class="platform-icon">
+            {% if platform == 'mediamap' %}
+                <i class="bi bi-globe text-primary"></i>
+            {% elif platform == 'guardpass' %}
+                <i class="bi bi-shield-fill text-success"></i>
+            {% elif platform == 'contentflow' %}
+                <i class="bi bi-collection-play text-info"></i>
+            {% endif %}
+        </div>
+        <h1>Login to {{ platform|capitalize }}</h1>
         <form method="POST" class="auth-form">
             <div class="form-group">
                 <input type="text" name="username" placeholder="Username" required>
@@ -96,6 +138,9 @@
             <button type="submit">Login</button>
         </form>
         <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+        <div class="back-link">
+            <a href="{{ url_for('index') }}"><i class="bi bi-arrow-left"></i> Select a different platform</a>
+        </div>
     </div>
 </body>
 </html> 

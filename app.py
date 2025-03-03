@@ -176,75 +176,115 @@ def register():
     
     return render_template('register.html')
 
+@app.route('/')
+def index():
+    """Landing page to select platform"""
+    if current_user.is_authenticated:
+        # If user is already logged in, redirect to their selected platform
+        platform = session.get('platform')
+        if platform == 'mediamap':
+            return redirect(url_for('mediamap_home'))
+        elif platform == 'guardpass':
+            return redirect(url_for('guardpass'))
+        elif platform == 'contentflow':
+            return redirect(url_for('contentflow'))
+        else:
+            # If no platform is selected, log them out
+            return redirect(url_for('logout'))
+    return render_template('landing.html')
+
+@app.route('/select_platform/<platform>')
+def select_platform(platform):
+    """Store the selected platform and redirect to login"""
+    if platform in ['mediamap', 'guardpass', 'contentflow']:
+        session['platform'] = platform
+        if current_user.is_authenticated:
+            return redirect(url_for('logout'))
+        return redirect(url_for('login'))
+    else:
+        flash('Invalid platform selection.', 'danger')
+        return redirect(url_for('index'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """Login route that checks for platform selection"""
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
-        
+        # Redirect to selected platform if already logged in
+        platform = session.get('platform')
+        if platform == 'mediamap':
+            return redirect(url_for('mediamap_home'))
+        elif platform == 'guardpass':
+            return redirect(url_for('guardpass'))
+        elif platform == 'contentflow':
+            return redirect(url_for('contentflow'))
+        else:
+            return redirect(url_for('logout'))
+    
+    # Check if platform is selected
+    if 'platform' not in session:
+        flash('Please select a platform first.', 'warning')
+        return redirect(url_for('index'))
+    
+    # Handle login form submission
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        remember = 'remember' in request.form
         
         user = User.query.filter_by(username=username).first()
         
-        # Debug the User object attributes
-        print(f"User found: {user}")
-        if user:
-            user_attrs = dir(user)
-            print(f"User attributes: {[attr for attr in user_attrs if not attr.startswith('_')]}")
-        
-        # The password field might be named password_hash or something else
-        if user:
-            # Try different common password field names
-            if hasattr(user, 'password_hash'):
-                password_verified = check_password_hash(user.password_hash, password)
-            elif hasattr(user, 'hashed_password'):
-                password_verified = check_password_hash(user.hashed_password, password)
-            elif hasattr(user, 'pwd_hash'):
-                password_verified = check_password_hash(user.pwd_hash, password)
-            else:
-                # If we can't find a password field, accept any login for debugging
-                password_verified = True
-                print("WARNING: No password field found, accepting any login")
+        if user and check_password_hash(user.password, password):
+            login_user(user)
             
-            if password_verified:
-                login_user(user, remember=remember)
-                
-                # Create a fresh chat session for the user
-                try:
-                    # Create a new chat in the database
-                    new_chat = Chat(
-                        user_id=user.id,
-                        title=f"New Chat - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-                    )
-                    db.session.add(new_chat)
-                    db.session.commit()
-                    
-                    # Store this chat ID in the session
-                    session['current_chat_id'] = new_chat.id
-                    print(f"Created fresh chat session: {new_chat.id}")
-                except Exception as e:
-                    print(f"Error creating fresh chat: {str(e)}")
-                
-                next_page = request.args.get('next')
-                print(f"Login successful for {username}, redirecting to: {next_page or 'home'}")
-                
-                # Use urlparse instead of url_parse
-                if not next_page or urlparse(next_page).netloc != '':
-                    next_page = url_for('home')
-                    
-                return redirect(next_page)
-        
-        flash('Invalid username or password', 'danger')
-        print(f"Login failed for username: {username}")
+            # Redirect based on selected platform
+            platform = session.get('platform')
+            if platform == 'mediamap':
+                return redirect(url_for('mediamap_home'))
+            elif platform == 'guardpass':
+                return redirect(url_for('guardpass'))
+            elif platform == 'contentflow':
+                return redirect(url_for('contentflow'))
+        else:
+            flash('Invalid username or password.', 'danger')
     
-    return render_template('login.html')
+    # Customize login template based on selected platform
+    platform = session.get('platform')
+    return render_template('login.html', platform=platform)
 
-@app.route('/')
+@app.route('/logout')
+def logout():
+    """Logout and clear platform selection"""
+    logout_user()
+    session.pop('platform', None)
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))
+
+# Platform-specific routes with access control
+@app.route('/mediamap')
 @login_required
-def home():
+def mediamap_home():
+    """MediaMap home page with platform check"""
+    if session.get('platform') != 'mediamap':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
     return render_template('index.html')
+
+@app.route('/guardpass')
+@login_required
+def guardpass():
+    """GuardPass home page with platform check"""
+    if session.get('platform') != 'guardpass':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    return render_template('guardpass.html', hide_right_sidebar=True)
+
+@app.route('/contentflow')
+@login_required
+def contentflow():
+    """ContentFlow home page with platform check"""
+    if session.get('platform') != 'contentflow':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    return render_template('contentflow.html', hide_right_sidebar=True)
 
 @app.route('/analyze', methods=['POST'])
 @login_required
@@ -1310,81 +1350,6 @@ def reset_db():
 # Create database tables
 with app.app_context():
     db.create_all()
-
-@app.route('/logout')
-@login_required
-def logout():
-    # Save the current chat session to the database before logging out
-    try:
-        current_chat_id = session.get('current_chat_id')
-        if current_chat_id:
-            # Get any active messages from session if they exist
-            chat_messages = active_chats.get(str(current_chat_id), [])
-            
-            # Save any unsaved messages to the database
-            for msg in chat_messages:
-                # Check if this message is already in the database
-                existing = Message.query.filter_by(
-                    chat_id=current_chat_id,
-                    role=msg.get('role'),
-                    content=msg.get('content')
-                ).first()
-                
-                if not existing:
-                    # Save this message to the database
-                    new_message = Message(
-                        chat_id=current_chat_id,
-                        role=msg.get('role'),
-                        content=msg.get('content'),
-                        timestamp=datetime.now(timezone.utc)
-                    )
-                    db.session.add(new_message)
-            
-            # Update the chat's updated_at timestamp
-            chat = Chat.query.get(current_chat_id)
-            if chat:
-                chat.updated_at = datetime.now(timezone.utc)
-            
-            # Commit all changes
-            db.session.commit()
-            print(f"Saved chat session {current_chat_id} before logout")
-            
-            # Remove from active chats
-            if str(current_chat_id) in active_chats:
-                del active_chats[str(current_chat_id)]
-                
-            # Clear from session
-            session.pop('current_chat_id', None)
-    except Exception as e:
-        print(f"Error saving chat on logout: {str(e)}")
-    
-    # Proceed with logout
-    logout_user()
-    return redirect(url_for('home'))
-
-# Simplified OrganizationInfo model without a relationship to User
-class OrganizationInfo(db.Model):
-    __tablename__ = 'organization_info'
-    __table_args__ = {'extend_existing': True}
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False)  # No foreign key constraint
-    org_info = db.Column(db.Text, nullable=True)  
-    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
-    
-    # No relationship defined - we'll use direct queries instead
-
-@app.route('/guardpass')
-@login_required
-def guardpass():
-    """Guardpass page with right sidebar hidden"""
-    try:
-        # Pass hide_right_sidebar=True to hide the right sidebar on this page
-        return render_template('guardpass.html', hide_right_sidebar=True)
-    except Exception as e:
-        print(f"Error in guardpass route: {str(e)}")
-        flash('An error occurred while loading the Guardpass page.', 'danger')
-        return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 
