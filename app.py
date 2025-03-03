@@ -15,6 +15,12 @@ import threading
 import uuid
 import re
 from urllib.parse import urlparse
+import numpy as np
+import cv2
+from facenet_pytorch import MTCNN, InceptionResnetV1
+import torch
+from PIL import Image
+import io
 
 # Load environment variables
 load_dotenv()
@@ -1267,6 +1273,172 @@ def reset_db():
 # Create database tables
 with app.app_context():
     db.create_all()
+
+# Create directory for storing face embeddings if it doesn't exist
+os.makedirs('face_db', exist_ok=True)
+
+# Initialize the face detection and recognition models
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+mtcnn = MTCNN(keep_all=True, device=device)
+resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+
+# Function to extract face embeddings
+def get_face_embedding(img_data):
+    """Convert an image to a face embedding vector"""
+    try:
+        # Convert bytes to PIL Image
+        if isinstance(img_data, bytes):
+            img = Image.open(io.BytesIO(img_data))
+        else:
+            img = Image.fromarray(img_data)
+        
+        # Detect faces
+        boxes, _ = mtcnn.detect(img)
+        
+        if boxes is None or len(boxes) == 0:
+            return None, "No face detected"
+        
+        if len(boxes) > 1:
+            return None, "Multiple faces detected"
+        
+        # Get face embedding
+        face = mtcnn(img)
+        if face is None:
+            return None, "Failed to align face"
+        
+        # Convert to embedding
+        embedding = resnet(face.unsqueeze(0))
+        return embedding.detach().cpu().numpy()[0], None
+    
+    except Exception as e:
+        return None, str(e)
+
+# Function to register a face
+def register_face(user_id, img_data):
+    embedding, error = get_face_embedding(img_data)
+    
+    if error:
+        return False, error
+    
+    # Save embedding to file
+    np.save(f'face_db/{user_id}.npy', embedding)
+    return True, None
+
+# Function to verify a face
+def verify_face(user_id, img_data, threshold=0.7):
+    if not face_recognition_available:
+        return False, "Face recognition is not available. Install required packages."
+    
+    # Get embedding for the current face
+    current_embedding, error = get_face_embedding(img_data)
+    
+    if error:
+        return False, error
+    
+    # Load stored embedding
+    try:
+        stored_embedding = np.load(f'face_db/{user_id}.npy')
+    except FileNotFoundError:
+        return False, "No registered face found for this user"
+    
+    # Calculate similarity (cosine similarity)
+    similarity = np.dot(current_embedding, stored_embedding) / (
+        np.linalg.norm(current_embedding) * np.linalg.norm(stored_embedding)
+    )
+    
+    if similarity >= threshold:
+        return True, None
+    else:
+        return False, f"Face verification failed. Similarity: {similarity:.2f}"
+
+# Route for the facial recognition setup page
+@app.route('/guardpass/setup-face-recognition', methods=['GET', 'POST'])
+@login_required
+def setup_face_recognition():
+    if request.method == 'POST':
+        # Check if the post request has the file part
+        if 'face_image' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['face_image']
+        
+        # If user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        
+        # Process the image
+        try:
+            img_data = file.read()
+            success, error = register_face(current_user.id, img_data)
+            
+            if success:
+                flash('Face registered successfully!', 'success')
+                # Update user profile to indicate face is registered
+                current_user.has_face_id = True
+                db.session.commit()
+            else:
+                flash(f'Error registering face: {error}', 'danger')
+        
+        except Exception as e:
+            flash(f'Error processing image: {str(e)}', 'danger')
+        
+        return redirect(url_for('guardpass'))
+    
+    return render_template('setup_face_recognition.html')
+
+# Route for face login
+@app.route('/guardpass/face-login', methods=['GET', 'POST'])
+def face_login():
+    if request.method == 'POST':
+        # Check if username was provided
+        username = request.form.get('username')
+        if not username:
+            flash('Username is required', 'danger')
+            return redirect(request.url)
+        
+        # Get the user
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            flash('User not found', 'danger')
+            return redirect(request.url)
+        
+        # Check if user has registered their face
+        if not user.has_face_id:
+            flash('Face ID not set up for this user', 'danger')
+            return redirect(request.url)
+        
+        # Process the face image
+        if 'face_image' not in request.files:
+            flash('No file part', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['face_image']
+        
+        if file.filename == '':
+            flash('No selected file', 'danger')
+            return redirect(request.url)
+        
+        try:
+            img_data = file.read()
+            success, error = verify_face(user.id, img_data)
+            
+            if success:
+                # Log the user in
+                login_user(user)
+                flash('Face verification successful!', 'success')
+                return redirect(url_for('guardpass'))
+            else:
+                flash(f'Face verification failed: {error}', 'danger')
+        
+        except Exception as e:
+            flash(f'Error processing image: {str(e)}', 'danger')
+        
+        return redirect(request.url)
+    
+    return render_template('face_login.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 

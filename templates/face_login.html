@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Face Login - GuardPass{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .webcam-container {
+        width: 100%;
+        margin: 20px auto;
+        text-align: center;
+    }
+    
+    #webcam {
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .capture-btn {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 16px;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .capture-btn:hover {
+        background-color: #0a58ca;
+    }
+    
+    .capture-btn:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    #preview {
+        display: none;
+        max-width: 320px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+    }
+    
+    .form-container {
+        display: none;
+    }
+    
+    .or-divider {
+        display: flex;
+        align-items: center;
+        margin: 20px 0;
+        color: #6c757d;
+    }
+    
+    .or-divider::before,
+    .or-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .or-divider::before {
+        margin-right: 10px;
+    }
+    
+    .or-divider::after {
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="login-container">
+                <h2 class="text-center mb-4">Face Login</h2>
+                
+                <!-- Username form -->
+                <form id="usernameForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Continue</button>
+                </form>
+                
+                <!-- Webcam section (initially hidden) -->
+                <div id="faceLoginSection" style="display:none;">
+                    <div class="webcam-container">
+                        <video id="webcam" autoplay playsinline></video>
+                        <canvas id="canvas" style="display:none;"></canvas>
+                        <img id="preview" alt="Preview">
+                        
+                        <div>
+                            <button id="captureBtn" class="capture-btn">Capture</button>
+                            <button id="retakeBtn" class="capture-btn" style="display:none;">Retake</button>
+                            <button id="submitBtn" class="capture-btn" style="display:none;">Login</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Traditional login link -->
+                <div class="text-center mt-3">
+                    <div class="or-divider">or</div>
+                    <a href="{{ url_for('login') }}">Login with Username and Password</a>
+                </div>
+                
+                <!-- Hidden form for submission -->
+                <form id="uploadForm" class="form-container" action="{{ url_for('face_login') }}" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="username" id="hiddenUsername">
+                    <input type="hidden" name="face_image" id="imageBlob">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let stream;
+    const usernameForm = document.getElementById('usernameForm');
+    const faceLoginSection = document.getElementById('faceLoginSection');
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const preview = document.getElementById('preview');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const hiddenUsername = document.getElementById('hiddenUsername');
+    const imageBlob = document.getElementById('imageBlob');
+    
+    // Handle username form submission
+    usernameForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        hiddenUsername.value = username;
+        usernameForm.style.display = 'none';
+        faceLoginSection.style.display = 'block';
+        startWebcam();
+    });
+    
+    // Start webcam
+    async function startWebcam() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        } catch (err) {
+            console.error("Error accessing the webcam", err);
+            alert("Error accessing the webcam. Please make sure you have a webcam connected and have given permission to use it.");
+        }
+    }
+    
+    // Capture image
+    function captureImage() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob
+        canvas.toBlob(function(blob) {
+            const imageUrl = URL.createObjectURL(blob);
+            preview.src = imageUrl;
+            preview.style.display = 'block';
+            
+            // Convert blob to base64 for form submission
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                imageBlob.value = base64data;
+            }
+            
+            // Hide webcam, show buttons
+            video.style.display = 'none';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'inline-block';
+        }, 'image/jpeg');
+    }
+    
+    // Retake picture
+    function retakeImage() {
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+    }
+    
+    // Submit form
+    function submitImage() {
+        uploadForm.submit();
+    }
+    
+    // Event listeners
+    captureBtn.addEventListener('click', captureImage);
+    retakeBtn.addEventListener('click', retakeImage);
+    submitBtn.addEventListener('click', submitImage);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    });
+</script>
+{% endblock %} 

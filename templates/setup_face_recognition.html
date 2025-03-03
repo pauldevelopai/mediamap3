@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Setup Face Recognition - GuardPass{% endblock %}
+
+{% block extra_css %}
+<style>
+    .webcam-container {
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    
+    #webcam {
+        width: 100%;
+        max-width: 640px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .capture-btn {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 16px;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .capture-btn:hover {
+        background-color: #0a58ca;
+    }
+    
+    .capture-btn:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    #preview {
+        display: none;
+        max-width: 320px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+    }
+    
+    .instructions {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .instructions ul {
+        text-align: left;
+        padding-left: 20px;
+    }
+    
+    .form-container {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="mb-4">Set Up Face Recognition</h1>
+            
+            <div class="instructions">
+                <h4>Instructions:</h4>
+                <ul>
+                    <li>Make sure you are in a well-lit area</li>
+                    <li>Position your face in the center of the camera</li>
+                    <li>Remove glasses, masks, or anything covering your face</li>
+                    <li>Keep a neutral expression</li>
+                    <li>Click "Capture" when ready</li>
+                </ul>
+            </div>
+            
+            <div class="webcam-container">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+                <img id="preview" alt="Preview">
+                
+                <div>
+                    <button id="captureBtn" class="capture-btn">Capture</button>
+                    <button id="retakeBtn" class="capture-btn" style="display:none;">Retake</button>
+                    <button id="submitBtn" class="capture-btn" style="display:none;">Register Face</button>
+                </div>
+            </div>
+            
+            <form id="uploadForm" class="form-container" action="{{ url_for('setup_face_recognition') }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="face_image" id="imageBlob">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let stream;
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const preview = document.getElementById('preview');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const imageBlob = document.getElementById('imageBlob');
+    
+    // Start webcam
+    async function startWebcam() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        } catch (err) {
+            console.error("Error accessing the webcam", err);
+            alert("Error accessing the webcam. Please make sure you have a webcam connected and have given permission to use it.");
+        }
+    }
+    
+    // Capture image
+    function captureImage() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob
+        canvas.toBlob(function(blob) {
+            const imageUrl = URL.createObjectURL(blob);
+            preview.src = imageUrl;
+            preview.style.display = 'block';
+            
+            // Convert blob to base64 for form submission
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                imageBlob.value = base64data;
+            }
+            
+            // Hide webcam, show buttons
+            video.style.display = 'none';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'inline-block';
+        }, 'image/jpeg');
+    }
+    
+    // Retake picture
+    function retakeImage() {
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+    }
+    
+    // Submit form
+    function submitImage() {
+        uploadForm.submit();
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', startWebcam);
+    captureBtn.addEventListener('click', captureImage);
+    retakeBtn.addEventListener('click', retakeImage);
+    submitBtn.addEventListener('click', submitImage);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    });
+</script>
+{% endblock %} 

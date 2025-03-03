@@ -19,6 +19,7 @@ class User(UserMixin, db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     location_name = db.Column(db.String(200))
+    has_face_id = db.Column(db.Boolean, default=False)
     
     # Relationships
     analyses = db.relationship('MediaAnalysis', backref='user', lazy=True)
@@ -140,4 +141,14 @@ class ChatMessage(db.Model):
     is_user_message = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
-        return f"<ChatMessage(message_text='{self.message_text}')>" 
+        return f"<ChatMessage(message_text='{self.message_text}')>"
+
+class LoginEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    login_time = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    method = db.Column(db.String(20), nullable=False)  # password, face_recognition, 2fa, etc.
+    success = db.Column(db.Boolean, default=True)
+    failure_reason = db.Column(db.String(255), nullable=True)
+    
+    user = db.relationship('User', backref=db.backref('login_events', lazy=True)) 

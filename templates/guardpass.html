@@ -152,6 +152,57 @@
                     <button class="btn btn-outline-secondary">Import Users</button>
                 </div>
             </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Biometric Authentication</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Face Recognition</h6>
+                    <p>Use your face as a secure method of authentication.</p>
+                    
+                    {% if current_user.has_face_id %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill"></i> Face ID is set up
+                        </div>
+                        <a href="{{ url_for('setup_face_recognition') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-camera"></i> Update Face ID
+                        </a>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Face ID not set up
+                        </div>
+                        <a href="{{ url_for('setup_face_recognition') }}" class="btn btn-primary">
+                            <i class="bi bi-camera"></i> Set Up Face ID
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h3 class="card-title mb-4">Enhanced Security with Face Recognition</h3>
+                            <p class="card-text mb-4">Add an extra layer of security to your account by setting up facial recognition for login.</p>
+                            <div class="d-grid gap-2 col-md-6 mx-auto">
+                                {% if current_user.has_face_id %}
+                                    <a href="{{ url_for('setup_face_recognition') }}" class="btn btn-light btn-lg">
+                                        <i class="bi bi-camera-fill me-2"></i>Update Face ID
+                                    </a>
+                                    <a href="{{ url_for('face_login') }}" class="btn btn-outline-light btn-lg">
+                                        <i class="bi bi-person-badge me-2"></i>Test Face Login
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('setup_face_recognition') }}" class="btn btn-light btn-lg">
+                                        <i class="bi bi-shield-lock-fill me-2"></i>Set Up Face Recognition Now
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
