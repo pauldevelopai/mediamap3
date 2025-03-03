@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Face - GuardPass{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Face Recognition Scanner</h3>
+                </div>
+                <div class="card-body">
+                    {% if result %}
+                        <div class="alert alert-success">
+                            <h4 class="alert-heading"><i class="bi bi-person-check-fill"></i> Person Identified!</h4>
+                            <p><strong>Name:</strong> {{ result.name }}</p>
+                            <p><strong>Confidence:</strong> {{ "%.2f"|format(result.confidence*100) }}%</p>
+                        </div>
+                        <a href="{{ url_for('scan_face') }}" class="btn btn-primary">Scan Another Face</a>
+                    {% else %}
+                        <div class="webcam-container">
+                            <p class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Position the face in the camera frame and capture an image to identify the person.
+                            </p>
+                            <video id="webcam" autoplay playsinline></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                            <img id="preview" style="display: none; max-width: 100%;" alt="Preview">
+                            
+                            <form id="uploadForm" action="{{ url_for('scan_face') }}" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="file" name="face_image" id="imageUpload" style="display: none;">
+                                <input type="hidden" name="imageBlob" id="imageBlob">
+                                
+                                <div class="mt-3">
+                                    <button type="button" id="captureBtn" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-camera-fill"></i> Capture Image
+                                    </button>
+                                    <button type="button" id="retakeBtn" style="display: none;" class="btn btn-secondary btn-lg">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Retake
+                                    </button>
+                                    <button type="button" id="submitBtn" style="display: none;" class="btn btn-success btn-lg">
+                                        <i class="bi bi-search"></i> Identify
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let video = document.getElementById('webcam');
+    let canvas = document.getElementById('canvas');
+    let preview = document.getElementById('preview');
+    let captureBtn = document.getElementById('captureBtn');
+    let retakeBtn = document.getElementById('retakeBtn');
+    let submitBtn = document.getElementById('submitBtn');
+    let uploadForm = document.getElementById('uploadForm');
+    let imageBlob = document.getElementById('imageBlob');
+    let stream = null;
+    
+    // Start webcam
+    async function startWebcam() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: "user"
+                } 
+            });
+            video.srcObject = stream;
+            captureBtn.disabled = false;
+        } catch (err) {
+            console.error("Error accessing webcam:", err);
+            alert("Error accessing webcam. Please ensure camera permissions are granted.");
+            captureBtn.disabled = true;
+        }
+    }
+    
+    // Capture image
+    function captureImage() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob
+        canvas.toBlob(function(blob) {
+            const imageUrl = URL.createObjectURL(blob);
+            preview.src = imageUrl;
+            preview.style.display = 'block';
+            
+            // Convert blob to file for form submission
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                imageBlob.value = base64data;
+            }
+            
+            // Hide webcam, show buttons
+            video.style.display = 'none';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'inline-block';
+        }, 'image/jpeg');
+    }
+    
+    // Retake picture
+    function retakeImage() {
+        video.style.display = 'block';
+        preview.style.display = 'none';
+        captureBtn.style.display = 'inline-block';
+        retakeBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+    }
+    
+    // Submit form
+    function submitImage() {
+        uploadForm.submit();
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        if (video) startWebcam();
+    });
+    
+    if (captureBtn) captureBtn.addEventListener('click', captureImage);
+    if (retakeBtn) retakeBtn.addEventListener('click', retakeImage);
+    if (submitBtn) submitBtn.addEventListener('click', submitImage);
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    });
+</script>
+{% endblock %} 
