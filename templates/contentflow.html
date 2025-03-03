@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block title %}ContentFlow Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .content-dashboard {
+        padding: 20px;
+    }
+    .content-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .content-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    }
+    .content-item {
+        border-left: 4px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .content-item:hover {
+        background-color: #f8f9fa;
+        border-left: 4px solid #17a2b8;
+    }
+    .content-item.draft {
+        border-left-color: #ffc107;
+    }
+    .content-item.published {
+        border-left-color: #28a745;
+    }
+    .content-item.scheduled {
+        border-left-color: #6f42c1;
+    }
+    .content-item.review {
+        border-left-color: #fd7e14;
+    }
+    .stat-card {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .stat-card.primary {
+        background: linear-gradient(45deg, #17a2b8, #138496);
+    }
+    .stat-card.success {
+        background: linear-gradient(45deg, #28a745, #218838);
+    }
+    .stat-card.warning {
+        background: linear-gradient(45deg, #ffc107, #d39e00);
+    }
+    .stat-card.purple {
+        background: linear-gradient(45deg, #6f42c1, #5a32a3);
+    }
+    .stat-card i {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+    }
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-dashboard">
+    <div class="container-fluid">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h1><i class="bi bi-collection-play text-info"></i> ContentFlow Dashboard</h1>
+                <p class="lead">Content creation and management system</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card primary">
+                    <div class="text-center">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <div class="stat-number">42</div>
+                        <div>Active Content</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card success">
+                    <div class="text-center">
+                        <i class="bi bi-graph-up"></i>
+                        <div class="stat-number">12.5K</div>
+                        <div>Total Views</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card warning">
+                    <div class="text-center">
+                        <i class="bi bi-clock-history"></i>
+                        <div class="stat-number">8</div>
+                        <div>Scheduled Posts</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card purple">
+                    <div class="text-center">
+                        <i class="bi bi-share"></i>
+                        <div class="stat-number">324</div>
+                        <div>Social Shares</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card content-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0"><i class="bi bi-list-check"></i> Recent Content</h5>
+                        <a href="#" class="btn btn-info btn-sm">
+                            <i class="bi bi-plus-circle"></i> Create New
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action content-item published">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">10 Tips for Content Creation</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person"></i> Sarah Johnson • 
+                                            <i class="bi bi-calendar3"></i> Published 2 days ago
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">Published</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-eye"></i> 1.2K</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action content-item scheduled">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Social Media Strategy for 2023</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person"></i> Michael Chen • 
+                                            <i class="bi bi-calendar3"></i> Scheduled for tomorrow
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-purple">Scheduled</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-clock"></i> 9:00 AM</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action content-item draft">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Email Marketing Fundamentals</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person"></i> Alex Peters • 
+                                            <i class="bi bi-calendar3"></i> Last edited today
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-warning">Draft</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-pencil"></i> 75% Complete</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action content-item review">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Video Production Best Practices</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person"></i> James Wilson • 
+                                            <i class="bi bi-calendar3"></i> Submitted yesterday
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-orange">In Review</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-person-check"></i> Lisa (Reviewer)</span>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action content-item published">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">Content SEO Optimization Guide</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person"></i> Emma Thompson • 
+                                            <i class="bi bi-calendar3"></i> Published 1 week ago
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success">Published</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-eye"></i> 3.4K</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="#" class="btn btn-outline-info">View All Content</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card content-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="bi bi-speedometer2"></i> Content Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card content-card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="bi bi-tools"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-info">
+                                <i class="bi bi-file-earmark-plus"></i> Create New Content
+                            </a>
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="bi bi-calendar-check"></i> View Calendar
+                            </a>
+                            <a href="#" class="btn btn-outline-success">
+                                <i class="bi bi-graph-up"></i> Analytics Dashboard
+                            </a>
+                            <a href="#" class="btn btn-outline-warning">
+                                <i class="bi bi-gear"></i> Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card content-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="bi bi-calendar-week"></i> Content Calendar</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> The detailed content calendar is available in the Calendar section. Here's a quick overview of upcoming content.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Author</th>
+                                        <th>Type</th>
+                                        <th>Scheduled Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Social Media Strategy for 2023</td>
+                                        <td>Michael Chen</td>
+                                        <td>Blog Post</td>
+                                        <td>May 15, 2023</td>
+                                        <td><span class="badge bg-purple">Scheduled</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger">Reschedule</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Influencer Marketing Guide</td>
+                                        <td>Jessica Wong</td>
+                                        <td>Video</td>
+                                        <td>May 17, 2023</td>
+                                        <td><span class="badge bg-purple">Scheduled</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger">Reschedule</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Content Creation Workshop</td>
+                                        <td>David Miller</td>
+                                        <td>Webinar</td>
+                                        <td>May 20, 2023</td>
+                                        <td><span class="badge bg-purple">Scheduled</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger">Reschedule</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Performance Chart
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Views',
+                data: [1200, 1900, 1500, 2500, 2200, 1800, 2800],
+                borderColor: '#17a2b8',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Engagement',
+                data: [200, 350, 280, 450, 380, 320, 520],
+                borderColor: '#6f42c1',
+                backgroundColor: 'rgba(111, 66, 193, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

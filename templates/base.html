@@ -159,7 +159,7 @@
                     {% elif session.get('platform') == 'guardpass' %}
                     <!-- GuardPass navigation items -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/guardpass' %}active{% endif %}" href="{{ url_for('guardpass') }}">Dashboard</a>
+                        <a class="nav-link {% if request.path == '/guardpass' %}active{% endif %}" href="{{ url_for('guardpass') }}">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/access-controls' %}active{% endif %}" href="{{ url_for('access_controls') }}">Access Controls</a>

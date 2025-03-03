@@ -232,17 +232,39 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         
-        if user and check_password_hash(user.password, password):
-            login_user(user)
+        # Check if the user exists
+        if user:
+            # We need to determine which attribute stores the password
+            # Let's try the common attribute names
+            password_verified = False
             
-            # Redirect based on selected platform
-            platform = session.get('platform')
-            if platform == 'mediamap':
-                return redirect(url_for('mediamap_home'))
-            elif platform == 'guardpass':
-                return redirect(url_for('guardpass'))
-            elif platform == 'contentflow':
-                return redirect(url_for('contentflow'))
+            # Inspect the user object to find potential password fields
+            user_dict = user.__dict__
+            password_field = None
+            
+            # List of potential password field names
+            potential_fields = ['password_hash', 'hashed_password', 'pwd', 'pwd_hash', 'password_digest']
+            
+            for field in potential_fields:
+                if field in user_dict:
+                    password_field = field
+                    break
+            
+            # If we found a password field, verify the password
+            if password_field and check_password_hash(getattr(user, password_field), password):
+                login_user(user)
+                platform = session.get('platform')
+                if platform == 'mediamap':
+                    return redirect(url_for('mediamap_home'))
+                elif platform == 'guardpass':
+                    return redirect(url_for('guardpass'))
+                elif platform == 'contentflow':
+                    return redirect(url_for('contentflow'))
+                else:
+                    return redirect(url_for('index'))
+            else:
+                # If no proper password field was found or password didn't match
+                flash('Invalid username or password.', 'danger')
         else:
             flash('Invalid username or password.', 'danger')
     
@@ -275,7 +297,7 @@ def guardpass():
     if session.get('platform') != 'guardpass':
         flash('Access denied. Please select the correct platform.', 'danger')
         return redirect(url_for('logout'))
-    return render_template('guardpass.html', hide_right_sidebar=True)
+    return render_template('index_guardpass.html', hide_right_sidebar=True)
 
 @app.route('/contentflow')
 @login_required
@@ -285,6 +307,15 @@ def contentflow():
         flash('Access denied. Please select the correct platform.', 'danger')
         return redirect(url_for('logout'))
     return render_template('contentflow.html', hide_right_sidebar=True)
+
+@app.route('/access-controls')
+@login_required
+def access_controls():
+    """Access Controls page for GuardPass"""
+    if session.get('platform') != 'guardpass':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    return render_template('access_controls.html', hide_right_sidebar=True)
 
 @app.route('/analyze', methods=['POST'])
 @login_required
@@ -856,8 +887,23 @@ def create_new_lesson():
 
 @app.route('/map')
 @login_required
-def show_map():
-    return render_template('map.html')
+def map():
+    """Map page for MediaMap"""
+    if session.get('platform') != 'mediamap':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    # This is likely calling a function named show_map which might handle the actual map display
+    return redirect(url_for('show_map'))
+
+# Alternatively, if show_map is meant to be accessed directly, we can use:
+# @app.route('/map')
+# @login_required
+# def map():
+#     """Map page for MediaMap"""
+#     if session.get('platform') != 'mediamap':
+#         flash('Access denied. Please select the correct platform.', 'danger')
+#         return redirect(url_for('logout'))
+#     return render_template('map.html')
 
 @app.route('/api/user-locations')
 @login_required
@@ -1350,6 +1396,15 @@ def reset_db():
 # Create database tables
 with app.app_context():
     db.create_all()
+
+@app.route('/content-calendar')
+@login_required
+def content_calendar():
+    """Content Calendar page for ContentFlow"""
+    if session.get('platform') != 'contentflow':
+        flash('Access denied. Please select the correct platform.', 'danger')
+        return redirect(url_for('logout'))
+    return render_template('content_calendar.html', hide_right_sidebar=True)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 
