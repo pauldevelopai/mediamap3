@@ -151,8 +151,9 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/mediamap' %}active{% endif %}" href="{{ url_for('mediamap_home') }}">Home</a>
                     </li>
+                    <!-- Removed map link from here -->
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/map' %}active{% endif %}" href="{{ url_for('map') }}">Map</a>
+                        <a class="nav-link {% if request.path == '/chat' %}active{% endif %}" href="{{ url_for('chat') }}">Chat</a>
                     </li>
                     <!-- Add more MediaMap-specific nav items -->
                     
@@ -204,25 +205,33 @@
             </div>
         </div>
     </nav>
-    <!-- END OF NAVBAR SECTION -->
 
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="content-wrapper">
-            <!-- Main content with conditional class -->
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Banner Section -->
+            <div class="col-12">
+                <div class="banner">
+                    {% if session.get('platform') == 'mediamap' %}
+                        <h1><i class="bi bi-globe"></i> MediaMap Dashboard</h1>
+                        <p class="lead">Explore media insights from around the world</p>
+                    {% elif session.get('platform') == 'guardpass' %}
+                        <h1><i class="bi bi-shield-fill"></i> GuardPass</h1>
+                        <p class="lead">Secure yourself and your assets with advanced protection</p>
+                    {% elif session.get('platform') == 'contentflow' %}
+                        <h1><i class="bi bi-collection-play"></i> ContentFlow</h1>
+                        <p class="lead">Optimize the creation of your AI generated content</p>
+                    {% else %}
+                        <h1>Welcome to Media Suite</h1>
+                        <p class="lead">Select a platform to begin</p>
+                    {% endif %}
+                </div>
+            </div>
+            
             <div class="main-content {% if hide_right_sidebar is defined and hide_right_sidebar %}main-content-full{% endif %}">
                 <div class="row g-4">
                     <!-- Left Sidebar -->
+                    {% if session.get('platform') == 'mediamap' %}
                     <div class="col-md-3">
                         <div class="sidebar">
                             <nav class="d-flex flex-column">
@@ -232,7 +241,7 @@
                                 <a href="/lessons-page" class="nav-link {% if request.path == '/lessons-page' %}active{% endif %}">
                                     <i class="bi bi-journal-text"></i> Daily Lessons
                                 </a>
-                                <a href="/map" class="nav-link {% if request.path == '/map' %}active{% endif %}">
+                                <a class="nav-link {% if request.path == '/map' %}active{% endif %}" href="{{ url_for('map') }}">
                                     <i class="bi bi-globe"></i> World Map
                                 </a>
                                 <a href="/translate" class="nav-link {% if request.path == '/translate' %}active{% endif %}">
@@ -257,6 +266,7 @@
                             </a>
                         </div>
                     </div>
+                    {% endif %}
                     
                     <!-- Main Content -->
                     <div class="col-md-{% if hide_right_sidebar is defined and hide_right_sidebar %}9{% else %}6{% endif %}">
@@ -411,4 +421,4 @@
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>
-</html> 
+</html>
