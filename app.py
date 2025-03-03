@@ -888,22 +888,13 @@ def create_new_lesson():
 @app.route('/map')
 @login_required
 def map():
-    """Map page for MediaMap"""
-    if session.get('platform') != 'mediamap':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
-    # This is likely calling a function named show_map which might handle the actual map display
-    return redirect(url_for('show_map'))
+    # Render the map template directly
+    return render_template('map.html')
 
-# Alternatively, if show_map is meant to be accessed directly, we can use:
-# @app.route('/map')
-# @login_required
-# def map():
-#     """Map page for MediaMap"""
-#     if session.get('platform') != 'mediamap':
-#         flash('Access denied. Please select the correct platform.', 'danger')
-#         return redirect(url_for('logout'))
-#     return render_template('map.html')
+@app.route('/show-map')
+@login_required
+def show_map():
+    return render_template('map.html')
 
 @app.route('/api/user-locations')
 @login_required
