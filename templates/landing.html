@@ -112,6 +112,60 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-balance-scale display-1 mb-3 text-danger"></i>
+                        <h2 class="card-title">Justice AI</h2>
+                        <p class="card-text">AI-powered legal analysis and justice applications</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Legal document analysis</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Case outcome prediction</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> AI-assisted legal research</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='justice') }}" class="btn btn-danger mt-3">Select Justice AI</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-translate display-1 mb-3 text-warning"></i>
+                        <h2 class="card-title">Language AI</h2>
+                        <p class="card-text">Advanced language processing and translation tools</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Multilingual translation</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Text summarization</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Content generation</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='language') }}" class="btn btn-warning mt-3">Select Language AI</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-mortarboard-fill display-1 mb-3 text-dark"></i>
+                        <h2 class="card-title">Training Lab</h2>
+                        <p class="card-text">Create and train custom AI models for your needs</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Custom model training</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Dataset management</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Model deployment</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-dark mt-3">Select Training Lab</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

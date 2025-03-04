@@ -190,23 +190,12 @@ def register():
     return render_template('register.html')
 
 @app.route('/')
+@login_required
 def index():
-    """Landing page to select platform"""
-    if current_user.is_authenticated:
-        # If user is already logged in, redirect to their selected platform
-        platform = session.get('platform')
-        if platform == 'mediamap':
-            return redirect(url_for('mediamap_home'))
-        elif platform == 'guardpass':
-            return redirect(url_for('guardpass'))
-        elif platform == 'contentflow':
-            return redirect(url_for('contentflow'))
-        else:
-            # If no platform is selected, log them out
-            return redirect(url_for('logout'))
+    # User must be logged in to view the landing page
     return render_template('landing.html')
 
-@app.route('/select_platform/<platform>')
+@app.route('/select-platform/<platform>')
 def select_platform(platform):
     """Store the selected platform and redirect to login"""
     if platform in ['mediamap', 'guardpass', 'contentflow']:
@@ -214,9 +203,17 @@ def select_platform(platform):
         if current_user.is_authenticated:
             return redirect(url_for('logout'))
         return redirect(url_for('login'))
-    else:
-        flash('Invalid platform selection.', 'danger')
-        return redirect(url_for('index'))
+    
+    # Add handling for new platforms
+    if platform == 'justice':
+        return redirect(url_for('justice_ai'))
+    elif platform == 'language':
+        return redirect(url_for('language_ai'))
+    elif platform == 'training':
+        return redirect(url_for('training_lab'))
+    
+    # Fallback for unknown platforms
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -1550,6 +1547,18 @@ def scan_face():
         return render_template('scan_face.html', result=None, error_message=error_message, debug_info=debug_info)
     
     return render_template('scan_face.html', result=None)
+
+@app.route('/justice-ai')
+def justice_ai():
+    return render_template('justice_ai.html')
+
+@app.route('/language-ai')
+def language_ai():
+    return render_template('language_ai.html')
+
+@app.route('/training-lab')
+def training_lab():
+    return render_template('training_lab.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 
