@@ -95,8 +95,9 @@
                 </div>
             </div>
             
-            <form id="uploadForm" class="form-container" action="{{ url_for('setup_face_recognition') }}" method="post" enctype="multipart/form-data">
-                <input type="hidden" name="face_image" id="imageBlob">
+            <form id="uploadForm" action="{{ url_for('setup_face_recognition') }}" method="post" enctype="multipart/form-data">
+                <input type="file" name="face_image" id="imageUpload" style="display: none;">
+                <input type="hidden" name="imageBlob" id="imageBlob">
             </form>
         </div>
     </div>

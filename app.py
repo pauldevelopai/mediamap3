@@ -21,6 +21,10 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 from PIL import Image
 import io
+import traceback
+import sys
+import insightface
+from insightface.app import FaceAnalysis
 
 # Load environment variables
 load_dotenv()
@@ -1277,107 +1281,149 @@ with app.app_context():
 # Create directory for storing face embeddings if it doesn't exist
 os.makedirs('face_db', exist_ok=True)
 
-# Initialize the face detection and recognition models
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-mtcnn = MTCNN(keep_all=True, device=device)
-resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+# Initialize InsightFace model
+print("Initializing InsightFace model...")
+face_app = FaceAnalysis(providers=['CPUExecutionProvider'])
+face_app.prepare(ctx_id=0, det_size=(640, 640))
+print("InsightFace model loaded successfully")
 
-# Function to extract face embeddings
 def get_face_embedding(img_data):
-    """Convert an image to a face embedding vector"""
+    """Convert an image to a face embedding vector using InsightFace"""
     try:
-        # Convert bytes to PIL Image
+        print("Starting face embedding extraction with InsightFace...")
+        
+        # Convert bytes to numpy array/image
         if isinstance(img_data, bytes):
-            img = Image.open(io.BytesIO(img_data))
+            print(f"Converting {len(img_data)} bytes to image")
+            nparr = np.frombuffer(img_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # Convert BGR to RGB (InsightFace expects RGB)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         else:
-            img = Image.fromarray(img_data)
+            print(f"Using provided numpy array")
+            img = img_data
+            
+        print(f"Image shape: {img.shape}")
         
-        # Detect faces
-        boxes, _ = mtcnn.detect(img)
+        # Detect and analyze faces
+        print("Detecting faces with InsightFace...")
+        faces = face_app.get(img)
         
-        if boxes is None or len(boxes) == 0:
+        if len(faces) == 0:
+            print("No faces detected in the image")
             return None, "No face detected"
         
-        if len(boxes) > 1:
-            return None, "Multiple faces detected"
+        print(f"Detected {len(faces)} faces")
         
-        # Get face embedding
-        face = mtcnn(img)
-        if face is None:
-            return None, "Failed to align face"
+        if len(faces) > 1:
+            print("Multiple faces detected, using the largest one")
+            # Find the face with the largest bounding box area
+            areas = [(face.bbox[2] - face.bbox[0]) * (face.bbox[3] - face.bbox[1]) for face in faces]
+            largest_face_idx = np.argmax(areas)
+            face = faces[largest_face_idx]
+        else:
+            face = faces[0]
         
-        # Convert to embedding
-        embedding = resnet(face.unsqueeze(0))
-        return embedding.detach().cpu().numpy()[0], None
+        # Get embedding directly from the face object
+        print("Getting embedding vector...")
+        embedding = face.embedding
+        print(f"Embedding shape: {embedding.shape}")
+        
+        return embedding, None
     
     except Exception as e:
+        print(f"Exception in get_face_embedding: {str(e)}")
+        print(traceback.format_exc())
         return None, str(e)
 
-# Function to register a face
-def register_face(name, user_id, img_data):
-    embedding, error = get_face_embedding(img_data)
-    
-    if error:
-        return False, error
-    
-    # Save embedding to file with user info
-    np.save(f'face_db/{user_id}.npy', embedding)
-    
-    # Save mapping of user_id to name
-    with open('face_db/face_registry.txt', 'a') as f:
-        f.write(f"{user_id}|{name}\n")
-    
-    return True, None
-
-# Function to identify a face from the database
-def identify_face(img_data, threshold=0.7):
+def identify_face(img_data, threshold=0.5):  # Lower threshold for ArcFace
+    print("--- Starting face identification with ArcFace ---")
     # Get embedding for the current face
+    print("Attempting to get face embedding...")
     current_embedding, error = get_face_embedding(img_data)
     
     if error:
+        print(f"ERROR in get_face_embedding: {error}")
         return None, error
+    
+    print(f"Successfully got embedding, shape: {current_embedding.shape if current_embedding is not None else 'None'}")
     
     # Load all stored embeddings
     max_similarity = 0
     best_match = None
     
+    # Check if face_db directory exists
+    face_db_path = os.path.join(os.getcwd(), 'face_db')
+    print(f"Looking for faces in: {face_db_path}")
+    
+    if not os.path.exists(face_db_path):
+        print("face_db directory doesn't exist!")
+        os.makedirs(face_db_path, exist_ok=True)
+        return None, "No faces registered (directory missing)"
+    
     # Load mapping of user_ids to names
     name_mapping = {}
+    registry_path = os.path.join(face_db_path, 'face_registry.txt')
+    print(f"Checking registry at: {registry_path}")
+    
     try:
-        with open('face_db/face_registry.txt', 'r') as f:
-            for line in f:
-                parts = line.strip().split('|')
-                if len(parts) >= 2:
-                    name_mapping[parts[0]] = parts[1]
-    except FileNotFoundError:
-        pass
+        if os.path.exists(registry_path):
+            with open(registry_path, 'r') as f:
+                for line in f:
+                    parts = line.strip().split('|')
+                    if len(parts) >= 2:
+                        name_mapping[parts[0]] = parts[1]
+            print(f"Loaded name mappings: {name_mapping}")
+        else:
+            print("Registry file doesn't exist")
+    except Exception as e:
+        print(f"Error reading registry: {str(e)}")
+        print(traceback.format_exc())
+    
+    # List all files in face_db
+    npy_files = [f for f in os.listdir(face_db_path) if f.endswith('.npy')]
+    print(f"Found {len(npy_files)} .npy files: {npy_files}")
+    
+    if not npy_files:
+        return None, "No faces registered (no .npy files)"
     
     # Check each registered face
-    for filename in os.listdir('face_db'):
-        if filename.endswith('.npy'):
-            user_id = filename.split('.')[0]
-            try:
-                embedding = np.load(f'face_db/{filename}')
-                
-                # Calculate similarity
-                similarity = np.dot(current_embedding, embedding) / (np.linalg.norm(current_embedding) * np.linalg.norm(embedding))
-                
-                # Keep track of best match
-                if similarity > max_similarity:
-                    max_similarity = similarity
-                    best_match = user_id
-            except Exception as e:
-                continue
+    for filename in npy_files:
+        user_id = filename.split('.')[0]
+        try:
+            embedding_path = os.path.join(face_db_path, filename)
+            print(f"Loading embedding from: {embedding_path}")
+            embedding = np.load(embedding_path)
+            print(f"Loaded embedding shape: {embedding.shape}")
+            
+            # Calculate similarity - cosine similarity
+            similarity = np.dot(current_embedding, embedding) / (
+                np.linalg.norm(current_embedding) * np.linalg.norm(embedding)
+            )
+            
+            print(f"Similarity with {user_id}: {similarity}")
+            
+            # Keep track of best match
+            if similarity > max_similarity:
+                max_similarity = similarity
+                best_match = user_id
+                print(f"New best match: {user_id} with similarity {similarity}")
+        except Exception as e:
+            print(f"Error processing {filename}: {str(e)}")
+            print(traceback.format_exc())
+            continue
     
     # Return best match if above threshold
     if max_similarity >= threshold:
         name = name_mapping.get(best_match, f"Unknown-{best_match}")
+        print(f"Match found: {name} with confidence {max_similarity}")
         return {
             "user_id": best_match,
             "name": name,
             "confidence": float(max_similarity)
         }, None
     else:
+        print(f"No match found above threshold. Best: {max_similarity:.2f}")
         return None, f"No match found (best similarity: {max_similarity:.2f})"
 
 # Route for face recognition
@@ -1423,10 +1469,13 @@ def setup_face_recognition():
 @app.route('/guardpass/scan-face', methods=['GET', 'POST'])
 @login_required
 def scan_face():
+    error_message = None
+    debug_info = None
+    
     if request.method == 'POST':
         # Check if the post request has the file part
         if 'face_image' not in request.files:
-            flash('No file part', 'danger')
+            flash('No image was provided', 'danger')
             return redirect(request.url)
         
         file = request.files['face_image']
@@ -1439,23 +1488,63 @@ def scan_face():
         
         # Process the image
         try:
-            img_data = file.read()
-            person, error = identify_face(img_data)
+            # Print debug info
+            print(f"Processing image: {file.filename}, size: {file.content_length} bytes")
             
-            if person:
-                # Log the identification
-                with open('face_db/identification_log.txt', 'a') as f:
-                    f.write(f"{datetime.now().isoformat()}|{person['user_id']}|{person['name']}|{person['confidence']}\n")
+            # Read the file
+            img_data = file.read()
+            print(f"Image data size: {len(img_data)} bytes")
+            
+            # Store debug information
+            debug_info = {
+                "filename": file.filename,
+                "file_size": len(img_data),
+                "content_type": file.content_type
+            }
+            
+            # Check if any faces are registered
+            face_dir = os.path.join(os.getcwd(), 'face_db')
+            if not os.path.exists(face_dir):
+                os.makedirs(face_dir, exist_ok=True)
+            
+            npy_files = [f for f in os.listdir(face_dir) if f.endswith('.npy')]
+            if not npy_files:
+                error_message = 'No faces registered in the database. Please register at least one face first.'
+                flash(error_message, 'warning')
+                return render_template('scan_face.html', result=None, error_message=error_message, debug_info=debug_info)
+            
+            # Try to identify the face
+            try:
+                # This is where problems might be occurring
+                person, error = identify_face(img_data)
                 
-                flash(f"Identified: {person['name']} (Confidence: {person['confidence']:.2f})", 'success')
-                return render_template('scan_face.html', result=person)
-            else:
-                flash(f'No match found: {error}', 'warning')
+                if person:
+                    # Log the identification
+                    log_path = os.path.join(face_dir, 'identification_log.txt')
+                    with open(log_path, 'a') as f:
+                        f.write(f"{datetime.now().isoformat()}|{person['user_id']}|{person['name']}|{person['confidence']}\n")
+                    
+                    flash(f"Identified: {person['name']} (Confidence: {person['confidence']:.2f})", 'success')
+                    return render_template('scan_face.html', result=person, debug_info=debug_info)
+                else:
+                    error_message = f'No match found: {error}'
+                    flash(error_message, 'warning')
+            except Exception as e:
+                import traceback
+                error_traceback = traceback.format_exc()
+                error_message = f"Error in identify_face: {str(e)}\n{error_traceback}"
+                print(error_message)
+                flash(f'Error identifying face: {str(e)}', 'danger')
         
         except Exception as e:
+            import traceback
+            error_traceback = traceback.format_exc()
+            error_message = f"Error processing image: {str(e)}\n{error_traceback}"
+            print(error_message)
             flash(f'Error processing image: {str(e)}', 'danger')
         
-        return redirect(request.url)
+        # Return template with error instead of redirecting
+        return render_template('scan_face.html', result=None, error_message=error_message, debug_info=debug_info)
     
     return render_template('scan_face.html', result=None)
 
