@@ -190,9 +190,8 @@ def register():
     return render_template('register.html')
 
 @app.route('/')
-@login_required
 def index():
-    # User must be logged in to view the landing page
+    # Landing page should be accessible without login
     return render_template('landing.html')
 
 @app.route('/select-platform/<platform>')
