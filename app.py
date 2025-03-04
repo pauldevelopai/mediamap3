@@ -191,8 +191,18 @@ def register():
 
 @app.route('/')
 def index():
-    # Landing page should be accessible without login
+    # Main landing page
     return render_template('landing.html')
+
+@app.route('/landing-page-1')
+def landing_page1():
+    # Content & Development Suite
+    return render_template('landing_page1.html')
+
+@app.route('/landing-page-2')
+def landing_page2():
+    # Security & Justice Suite
+    return render_template('landing_page2.html')
 
 @app.route('/select-platform/<platform>')
 def select_platform(platform):
@@ -210,6 +220,10 @@ def select_platform(platform):
         return redirect(url_for('language_ai'))
     elif platform == 'training':
         return redirect(url_for('training_lab'))
+    
+    # Add CrimeSolver
+    if platform == 'crimesolver':
+        return redirect(url_for('crimesolver'))
     
     # Fallback for unknown platforms
     return redirect(url_for('index'))
@@ -1558,6 +1572,10 @@ def language_ai():
 @app.route('/training-lab')
 def training_lab():
     return render_template('training_lab.html')
+
+@app.route('/crimesolver')
+def crimesolver():
+    return render_template('crimesolver.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 

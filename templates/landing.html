@@ -47,122 +47,45 @@
             background-color: #343a40;
             color: white;
         }
+        .landing-option {
+            padding: 3rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .landing-option:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="container">
             <h1 class="display-4">Welcome to Develop AI</h1>
-            <p class="lead">Choose which platform you'd like to access</p>
+            <p class="lead">Choose which platform you'd like to explore</p>
         </div>
     </div>
 
     <div class="container mb-5">
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            <div class="col">
-                <div class="card h-100 platform-card">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100 platform-card landing-option bg-primary text-white">
                     <div class="card-body text-center">
-                        <i class="bi bi-globe display-1 mb-3 text-primary"></i>
-                        <h2 class="card-title">MediaMap</h2>
-                        <p class="card-text">Media analysis and AI implementation platform</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Global AI adoption</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Strategic insights with AI</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> AI-powered analysis</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='mediamap') }}" class="btn btn-primary mt-3">Select MediaMap</a>
+                        <i class="bi bi-robot display-1 mb-3"></i>
+                        <h2 class="card-title">Content & Development</h2>
+                        <p class="card-text">MediaMap, ContentFlow, Language AI, and Training Lab</p>
+                        <a href="{{ url_for('landing_page1') }}" class="btn btn-light mt-3">Explore</a>
                     </div>
                 </div>
             </div>
             
-            <div class="col">
-                <div class="card h-100 platform-card">
+            <div class="col-md-6">
+                <div class="card h-100 platform-card landing-option bg-danger text-white">
                     <div class="card-body text-center">
-                        <i class="bi bi-shield-fill display-1 mb-3 text-success"></i>
-                        <h2 class="card-title">GuardPass</h2>
-                        <p class="card-text">Security and access management dashboard</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Access control</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Security monitoring</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> User permissions</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='guardpass') }}" class="btn btn-success mt-3">Select GuardPass</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col">
-                <div class="card h-100 platform-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-collection-play display-1 mb-3 text-info"></i>
-                        <h2 class="card-title">ContentFlow</h2>
-                        <p class="card-text">Content creation and management system</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Content scheduling</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Analytics dashboard</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Multi-platform publishing</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='contentflow') }}" class="btn btn-info mt-3 text-white">Select ContentFlow</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="card h-100 platform-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-balance-scale display-1 mb-3 text-danger"></i>
-                        <h2 class="card-title">Justice AI</h2>
-                        <p class="card-text">AI-powered legal analysis and justice applications</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Legal document analysis</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Case outcome prediction</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> AI-assisted legal research</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='justice') }}" class="btn btn-danger mt-3">Select Justice AI</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col">
-                <div class="card h-100 platform-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-translate display-1 mb-3 text-warning"></i>
-                        <h2 class="card-title">Language AI</h2>
-                        <p class="card-text">Advanced language processing and translation tools</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Multilingual translation</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Text summarization</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Content generation</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='language') }}" class="btn btn-warning mt-3">Select Language AI</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col">
-                <div class="card h-100 platform-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-mortarboard-fill display-1 mb-3 text-dark"></i>
-                        <h2 class="card-title">Training Lab</h2>
-                        <p class="card-text">Create and train custom AI models for your needs</p>
-                        <div class="platform-features">
-                            <ul class="list-unstyled">
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Custom model training</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Dataset management</li>
-                                <li><i class="bi bi-check-circle-fill text-success"></i> Model deployment</li>
-                            </ul>
-                        </div>
-                        <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-dark mt-3">Select Training Lab</a>
+                        <i class="bi bi-shield-lock display-1 mb-3"></i>
+                        <h2 class="card-title">Security & Justice</h2>
+                        <p class="card-text">Justice AI, GuardPass, and CrimeSolver</p>
+                        <a href="{{ url_for('landing_page2') }}" class="btn btn-light mt-3">Explore</a>
                     </div>
                 </div>
             </div>

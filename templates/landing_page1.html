@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content & Development Suite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .platform-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .platform-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .platform-features {
+            margin: 1.5rem 0;
+            text-align: left;
+            padding-left: 2rem;
+        }
+        .platform-features li {
+            margin-bottom: 0.5rem;
+        }
+        .footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            background-color: #343a40;
+            color: white;
+        }
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1 class="display-4">Content & Development</h1>
+            <p class="lead">Choose which platform you'd like to access</p>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <!-- MediaMap -->
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-globe display-1 mb-3 text-primary"></i>
+                        <h2 class="card-title">MediaMap</h2>
+                        <p class="card-text">Media analysis and AI implementation platform</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Global AI adoption</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Strategic insights with AI</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> AI-powered analysis</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='mediamap') }}" class="btn btn-primary mt-3">Select MediaMap</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ContentFlow -->
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-collection-play display-1 mb-3 text-info"></i>
+                        <h2 class="card-title">ContentFlow</h2>
+                        <p class="card-text">Content creation and management system</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Content scheduling</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Analytics dashboard</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Multi-platform publishing</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='contentflow') }}" class="btn btn-info mt-3 text-white">Select ContentFlow</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Language AI -->
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-translate display-1 mb-3 text-warning"></i>
+                        <h2 class="card-title">Language AI</h2>
+                        <p class="card-text">Advanced language processing and translation tools</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Multilingual translation</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Text summarization</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Content generation</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='language') }}" class="btn btn-warning mt-3">Select Language AI</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Training Lab -->
+            <div class="col">
+                <div class="card h-100 platform-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-mortarboard-fill display-1 mb-3 text-dark"></i>
+                        <h2 class="card-title">Training Lab</h2>
+                        <p class="card-text">Create and train custom AI models for your needs</p>
+                        <div class="platform-features">
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Custom model training</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Dataset management</li>
+                                <li><i class="bi bi-check-circle-fill text-success"></i> Model deployment</li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-dark mt-3">Select Training Lab</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg back-button">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+
+    <div class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Develop AI</h3>
+                    <p>A comprehensive set of AI tools for professionals.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2025 Develop AI. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
