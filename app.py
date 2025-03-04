@@ -221,9 +221,9 @@ def select_platform(platform):
     elif platform == 'training':
         return redirect(url_for('training_lab'))
     
-    # Add CrimeCaster (renamed from CrimeSolver)
-    if platform == 'crimecaster':
-        return redirect(url_for('crimecaster'))
+    # Updated to CrimeCast
+    if platform == 'crimecast':
+        return redirect(url_for('crimecast'))
     
     # Fallback for unknown platforms
     return redirect(url_for('index'))
@@ -1573,9 +1573,9 @@ def language_ai():
 def training_lab():
     return render_template('training_lab.html')
 
-@app.route('/crimecaster')
-def crimecaster():
-    return render_template('crimecaster.html')
+@app.route('/crimecast')
+def crimecast():
+    return render_template('crimecast.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True) 
