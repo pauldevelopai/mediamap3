@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}CrimeCaster{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">CrimeCaster Platform</h1>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2>Predictive Crime Analytics</h2>
+                    <p>Advanced AI-powered platform for predicting and preventing crimes before they happen.</p>
+                    
+                    <!-- Content goes here -->
+                    <p>CrimeCaster uses machine learning algorithms to analyze patterns in historical crime data, 
+                    social indicators, and environmental factors to identify high-risk areas and situations. 
+                    This proactive approach enables law enforcement to deploy resources strategically and implement 
+                    targeted prevention measures.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    Prediction Tools
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action">Risk Mapping</a>
+                    <a href="#" class="list-group-item list-group-item-action">Trend Analysis</a>
+                    <a href="#" class="list-group-item list-group-item-action">Prevention Planning</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
