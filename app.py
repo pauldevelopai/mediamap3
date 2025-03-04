@@ -25,6 +25,9 @@ import traceback
 import sys
 import insightface
 from insightface.app import FaceAnalysis
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.transforms as transforms
 
 # Load environment variables
 load_dotenv()
