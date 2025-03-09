@@ -139,12 +139,84 @@
             margin-left: 10px;
         }
         
+        /* Top navigation bar */
+        .top-nav {
+            background-color: #343a40;
+            padding: 0.5rem 0;
+        }
+        .top-nav .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .top-nav .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .top-nav .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: 500;
+        }
+        .top-nav .container {
+            display: flex;
+            align-items: center;
+        }
+        .top-nav .navbar-brand {
+            color: white;
+            font-weight: 600;
+            margin-right: 2rem;
+        }
+        
         /* Extra CSS from blocks */
         {% block extra_css %}{% endblock %}
         {% block additional_styles %}{% endblock %}
     </style>
 </head>
 <body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('landing_page1') }}">
+                <i class="bi bi-layers"></i> MediaMap AI
+            </a>
+            <ul class="nav">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'mediamap' %}active{% endif %}" href="{{ url_for('select_platform', platform='mediamap') }}">
+                        <i class="bi bi-map"></i> AI Map
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'language' %}active{% endif %}" href="{{ url_for('select_platform', platform='language') }}">
+                        <i class="bi bi-translate"></i> Voices AI
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'contentflow' %}active{% endif %}" href="{{ url_for('select_platform', platform='contentflow') }}">
+                        <i class="bi bi-collection-play"></i> Content Flow
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'metadata' %}active{% endif %}" href="{{ url_for('metadata.home') }}">
+                        <i class="bi bi-database"></i> Metadata
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'training' %}active{% endif %}" href="{{ url_for('select_platform', platform='training') }}">
+                        <i class="bi bi-mortarboard"></i> Training Lab
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_section == 'store' %}active{% endif %}" href="{{ url_for('select_platform', platform='store') }}">
+                        <i class="bi bi-shop"></i> AI Store
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
     <!-- Login/Logout Buttons in Top Right Corner -->
     <div class="auth-buttons">
         {% if current_user.is_authenticated %}
@@ -215,6 +287,9 @@
                             </a>
                             <a class="nav-link {% if active_page == 'translate' %}active{% endif %}" href="{{ url_for('translate_page') }}">
                                 <i class="bi bi-translate"></i> Translate
+                            </a>
+                            <a class="nav-link {% if active_page == 'store' %}active{% endif %}" href="{{ url_for('select_platform', platform='store') }}">
+                                <i class="bi bi-shop"></i> AI Store
                             </a>
                         </nav>
                     </div>

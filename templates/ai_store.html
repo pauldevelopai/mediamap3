@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}AI Store - MediaMap AI{% endblock %}
+
+{% set active_section = 'store' %}
+{% set active_page = 'store' %}
+
+{% block banner_title %}AI Store{% endblock %}
+{% block banner_subtitle %}Discover and purchase AI models and tools{% endblock %}
+
+{% block additional_styles %}
+.store-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    height: 100%;
+    overflow: hidden;
+}
+.store-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+.store-card-img {
+    height: 180px;
+    object-fit: cover;
+}
+.store-card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+.store-card-price {
+    font-weight: 700;
+    color: #0d6efd;
+    font-size: 1.2rem;
+}
+.store-card-rating {
+    color: #ffc107;
+}
+.category-badge {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.category-badge:hover {
+    transform: scale(1.05);
+}
+.featured-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+{% endblock %}
+
+{% block main_content %}
+<div class="mb-4">
+    <h2 class="mb-3">Categories</h2>
+    <div class="d-flex flex-wrap gap-2">
+        <span class="badge bg-primary category-badge px-3 py-2">All Models</span>
+        <span class="badge bg-secondary category-badge px-3 py-2">Text Generation</span>
+        <span class="badge bg-success category-badge px-3 py-2">Image Generation</span>
+        <span class="badge bg-info category-badge px-3 py-2">Audio Processing</span>
+        <span class="badge bg-warning text-dark category-badge px-3 py-2">Video Analysis</span>
+        <span class="badge bg-danger category-badge px-3 py-2">Data Analysis</span>
+        <span class="badge bg-dark category-badge px-3 py-2">Chatbots</span>
+    </div>
+</div>
+
+<div class="featured-section mb-4">
+    <h2 class="mb-3">Featured Model</h2>
+    <div class="row">
+        <div class="col-md-4">
+            <img src="https://via.placeholder.com/300x200?text=AI+Model" class="img-fluid rounded" alt="Featured AI Model">
+        </div>
+        <div class="col-md-8">
+            <h3>MediaAnalyzer Pro</h3>
+            <div class="mb-2">
+                <span class="store-card-rating">
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-half"></i>
+                </span>
+                <span class="text-muted ms-2">4.5 (128 reviews)</span>
+            </div>
+            <p class="text-muted">Advanced media analysis model with sentiment detection, content categorization, and audience targeting capabilities.</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="store-card-price">$199.99</span>
+                <button class="btn btn-primary">
+                    <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h2 class="mb-3">Popular Models</h2>
+<div class="row g-4">
+    <!-- Model 1 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <span class="badge bg-success store-card-badge">New</span>
+            <img src="https://via.placeholder.com/300x180?text=Text+Generator" class="card-img-top store-card-img" alt="Text Generator Model">
+            <div class="card-body">
+                <h5 class="card-title">Advanced Text Generator</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star"></i>
+                    </span>
+                    <span class="text-muted ms-2">4.0 (56 reviews)</span>
+                </div>
+                <p class="card-text">Generate high-quality content for blogs, social media, and marketing materials.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="store-card-price">$49.99</span>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model 2 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <span class="badge bg-primary store-card-badge">Popular</span>
+            <img src="https://via.placeholder.com/300x180?text=Image+Generator" class="card-img-top store-card-img" alt="Image Generator Model">
+            <div class="card-body">
+                <h5 class="card-title">Creative Image Generator</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                    </span>
+                    <span class="text-muted ms-2">4.5 (89 reviews)</span>
+                </div>
+                <p class="card-text">Create stunning images from text descriptions for your marketing campaigns.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="store-card-price">$79.99</span>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model 3 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <img src="https://via.placeholder.com/300x180?text=Audio+Analyzer" class="card-img-top store-card-img" alt="Audio Analyzer Model">
+            <div class="card-body">
+                <h5 class="card-title">Audio Content Analyzer</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                        <i class="bi bi-star"></i>
+                    </span>
+                    <span class="text-muted ms-2">3.5 (42 reviews)</span>
+                </div>
+                <p class="card-text">Analyze audio content for sentiment, keywords, and audience engagement metrics.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="store-card-price">$59.99</span>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model 4 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <span class="badge bg-danger store-card-badge">Hot</span>
+            <img src="https://via.placeholder.com/300x180?text=Video+Analyzer" class="card-img-top store-card-img" alt="Video Analyzer Model">
+            <div class="card-body">
+                <h5 class="card-title">Video Content Analyzer</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star"></i>
+                    </span>
+                    <span class="text-muted ms-2">4.0 (67 reviews)</span>
+                </div>
+                <p class="card-text">Analyze video content for engagement metrics, audience retention, and content quality.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="store-card-price">$89.99</span>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model 5 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <img src="https://via.placeholder.com/300x180?text=Data+Analyzer" class="card-img-top store-card-img" alt="Data Analyzer Model">
+            <div class="card-body">
+                <h5 class="card-title">Data Insights Generator</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </span>
+                    <span class="text-muted ms-2">5.0 (34 reviews)</span>
+                </div>
+                <p class="card-text">Generate actionable insights from your marketing and audience data.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="store-card-price">$99.99</span>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model 6 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card store-card">
+            <span class="badge bg-info text-dark store-card-badge">Sale</span>
+            <img src="https://via.placeholder.com/300x180?text=Chatbot" class="card-img-top store-card-img" alt="Chatbot Model">
+            <div class="card-body">
+                <h5 class="card-title">Customer Service Chatbot</h5>
+                <div class="mb-2">
+                    <span class="store-card-rating">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                        <i class="bi bi-star"></i>
+                    </span>
+                    <span class="text-muted ms-2">3.5 (52 reviews)</span>
+                </div>
+                <p class="card-text">Implement an AI-powered chatbot for customer service and support.</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-decoration-line-through text-muted me-2">$129.99</span>
+                        <span class="store-card-price">$69.99</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-center mt-4">
+    <nav aria-label="Store pagination">
+        <ul class="pagination">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+            </li>
+            <li class="page-item active" aria-current="page">
+                <a class="page-link" href="#">1</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">2</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">3</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endblock %} 
