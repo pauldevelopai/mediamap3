@@ -1,146 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login - {{ platform|capitalize }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Develop AI Platform</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            flex-direction: column;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            min-height: 100vh;
         }
-        .banner {
-            background-color: 
-            {% if platform == 'mediamap' %}#007bff
-            {% elif platform == 'guardpass' %}#28a745
-            {% elif platform == 'contentflow' %}#17a2b8
-            {% else %}#007bff{% endif %};
-            color: #fff;
-            width: 100%;
-            padding: 20px 0;
+        .login-container {
+            max-width: 450px;
+            margin: 100px auto;
+        }
+        .login-header {
             text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            margin-bottom: 2rem;
         }
-        .banner-subtitle {
-            font-size: 16px;
-            font-weight: normal;
-            margin-top: 5px;
-        }
-        .container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: 
-            {% if platform == 'mediamap' %}#007bff
-            {% elif platform == 'guardpass' %}#28a745
-            {% elif platform == 'contentflow' %}#17a2b8
-            {% else %}#007bff{% endif %};
-            color: white;
-            padding: 10px 15px;
+        .login-card {
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        button:hover {
-            background-color: 
-            {% if platform == 'mediamap' %}#0056b3
-            {% elif platform == 'guardpass' %}#218838
-            {% elif platform == 'contentflow' %}#138496
-            {% else %}#0056b3{% endif %};
+        .btn-primary {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            border: none;
+            padding: 10px 20px;
         }
-        p {
-            margin-top: 20px;
-            color: #666;
-        }
-        a {
-            color: 
-            {% if platform == 'mediamap' %}#007bff
-            {% elif platform == 'guardpass' %}#28a745
-            {% elif platform == 'contentflow' %}#17a2b8
-            {% else %}#007bff{% endif %};
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .platform-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-        .back-link {
-            margin-top: 20px;
+        .alert {
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
-    <div class="banner">
-        {% if platform == 'mediamap' %}
-            <i class="bi bi-globe"></i> MediaMap
-        {% elif platform == 'guardpass' %}
-            <i class="bi bi-shield-fill"></i> GuardPass
-        {% elif platform == 'contentflow' %}
-            <i class="bi bi-collection-play"></i> ContentFlow
-        {% else %}
-            Media Suite
-        {% endif %}
-        <div class="banner-subtitle">Created by Develop AI</div>
-    </div>
-    <div class="container">
-        <div class="platform-icon">
-            {% if platform == 'mediamap' %}
-                <i class="bi bi-globe text-primary"></i>
-            {% elif platform == 'guardpass' %}
-                <i class="bi bi-shield-fill text-success"></i>
-            {% elif platform == 'contentflow' %}
-                <i class="bi bi-collection-play text-info"></i>
+    <div class="container login-container">
+        <div class="login-header">
+            <h1 class="display-5">Develop AI Platform</h1>
+            <p class="lead text-muted">Sign in to access your tools</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
-        </div>
-        <h1>Login to {{ platform|capitalize }}</h1>
-        <form method="POST" class="auth-form">
-            <div class="form-group">
-                <input type="text" name="username" placeholder="Username" required>
+        {% endwith %}
+        
+        <div class="card login-card">
+            <div class="card-body p-5">
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-4">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember me</label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <input type="password" name="password" placeholder="Password" required>
+            <div class="card-footer bg-white text-center py-3">
+                <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
             </div>
-            <button type="submit">Login</button>
-        </form>
-        <p>Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
-        <div class="back-link">
-            <a href="{{ url_for('index') }}"><i class="bi bi-arrow-left"></i> Select a different platform</a>
         </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Add Metadata{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('metadata.home') }}">Metadata</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add New</li>
+                </ol>
+            </nav>
+            <h1>Add Metadata</h1>
+            <p class="lead">Create a new metadata entry for your content</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form id="metadata-form">
+                        <div class="mb-3">
+                            <label for="content-title" class="form-label">Content Title</label>
+                            <input type="text" class="form-control" id="content-title" placeholder="Enter content title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content-type" class="form-label">Content Type</label>
+                            <select class="form-select" id="content-type" required>
+                                <option value="">Select content type</option>
+                                <option value="video">Video</option>
+                                <option value="audio">Audio</option>
+                                <option value="image">Image</option>
+                                <option value="article">Article</option>
+                                <option value="document">Document</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content-url" class="form-label">Content URL</label>
+                            <input type="url" class="form-control" id="content-url" placeholder="https://example.com/content">
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" rows="3" placeholder="Enter content description"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" id="tags" placeholder="Enter tags separated by commas">
+                            <small class="text-muted">Example: news, technology, interview</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Categories</label>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="news" id="category-news">
+                                        <label class="form-check-label" for="category-news">News</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="entertainment" id="category-entertainment">
+                                        <label class="form-check-label" for="category-entertainment">Entertainment</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="education" id="category-education">
+                                        <label class="form-check-label" for="category-education">Education</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="sports" id="category-sports">
+                                        <label class="form-check-label" for="category-sports">Sports</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="technology" id="category-technology">
+                                        <label class="form-check-label" for="category-technology">Technology</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="business" id="category-business">
+                                        <label class="form-check-label" for="category-business">Business</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="publish-date" class="form-label">Publish Date</label>
+                            <input type="date" class="form-control" id="publish-date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="author" class="form-label">Author/Creator</label>
+                            <input type="text" class="form-control" id="author" placeholder="Enter author or creator name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="custom-fields" class="form-label">Custom Fields (JSON)</label>
+                            <textarea class="form-control" id="custom-fields" rows="3" placeholder='{"key1": "value1", "key2": "value2"}'></textarea>
+                            <small class="text-muted">Enter additional metadata as JSON</small>
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary me-md-2" onclick="window.location.href='{{ url_for('metadata.home') }}'">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Metadata</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-info-circle text-primary me-2"></i> Add descriptive tags to improve searchability</li>
+                        <li class="mb-2"><i class="bi bi-info-circle text-primary me-2"></i> Be specific with categories to help with organization</li>
+                        <li class="mb-2"><i class="bi bi-info-circle text-primary me-2"></i> Include a detailed description for better context</li>
+                        <li class="mb-2"><i class="bi bi-info-circle text-primary me-2"></i> Use custom fields for platform-specific metadata</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Batch Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" type="button">Import CSV</button>
+                        <button class="btn btn-outline-secondary" type="button">Batch Upload</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('metadata-form');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const title = document.getElementById('content-title').value;
+        const contentType = document.getElementById('content-type').value;
+        const url = document.getElementById('content-url').value;
+        const description = document.getElementById('description').value;
+        const tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
+        const publishDate = document.getElementById('publish-date').value;
+        const author = document.getElementById('author').value;
+        
+        // Get selected categories
+        const categories = [];
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            categories.push(checkbox.value);
+        });
+        
+        // Get custom fields (validate JSON)
+        let customFields = {};
+        try {
+            const customFieldsText = document.getElementById('custom-fields').value.trim();
+            if (customFieldsText) {
+                customFields = JSON.parse(customFieldsText);
+            }
+        } catch (error) {
+            alert('Invalid JSON in custom fields. Please correct and try again.');
+            return;
+        }
+        
+        // Create metadata object
+        const metadata = {
+            title,
+            contentType,
+            url,
+            description,
+            tags,
+            categories,
+            publishDate,
+            author,
+            customFields,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Send to server
+        fetch('/metadata/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(metadata)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Metadata added successfully!');
+                window.location.href = '{{ url_for("metadata.home") }}';
+            } else {
+                alert('Error adding metadata: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving metadata.');
+        });
+    });
+});
+</script>
+{% endblock %} 

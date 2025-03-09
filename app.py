@@ -28,6 +28,8 @@ from insightface.app import FaceAnalysis
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+from media_app.contentflow.app import contentflow_bp
+from media_app.metadata.app import metadata_bp
 
 # Load environment variables
 load_dotenv()
@@ -84,6 +86,8 @@ SYSTEM_PROMPT_SYNTHESIS = """You are an organizational analyst. Extract key info
 Return the information in JSON format with these categories. Only include information that has been explicitly mentioned or can be directly inferred."""
 
 app.register_blueprint(auth)
+app.register_blueprint(contentflow_bp)
+app.register_blueprint(metadata_bp)
 
 # In-memory storage for active chats
 active_chats = {}
@@ -191,8 +195,8 @@ def register():
 
 @app.route('/')
 def index():
-    # Main landing page
-    return render_template('landing.html')
+    # Redirect to login page directly
+    return redirect(url_for('login'))
 
 @app.route('/landing-page-1')
 def landing_page1():
@@ -230,23 +234,10 @@ def select_platform(platform):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Login route that checks for platform selection"""
+    """Login route that redirects to landing_page1 after successful login"""
     if current_user.is_authenticated:
-        # Redirect to selected platform if already logged in
-        platform = session.get('platform')
-        if platform == 'mediamap':
-            return redirect(url_for('mediamap_home'))
-        elif platform == 'guardpass':
-            return redirect(url_for('guardpass'))
-        elif platform == 'contentflow':
-            return redirect(url_for('contentflow'))
-        else:
-            return redirect(url_for('logout'))
-    
-    # Check if platform is selected
-    if 'platform' not in session:
-        flash('Please select a platform first.', 'warning')
-        return redirect(url_for('index'))
+        # Redirect to landing_page1 if already logged in
+        return redirect(url_for('landing_page1'))
     
     # Handle login form submission
     if request.method == 'POST':
@@ -276,24 +267,16 @@ def login():
             # If we found a password field, verify the password
             if password_field and check_password_hash(getattr(user, password_field), password):
                 login_user(user)
-                platform = session.get('platform')
-                if platform == 'mediamap':
-                    return redirect(url_for('mediamap_home'))
-                elif platform == 'guardpass':
-                    return redirect(url_for('guardpass'))
-                elif platform == 'contentflow':
-                    return redirect(url_for('contentflow'))
-                else:
-                    return redirect(url_for('index'))
+                # Redirect to landing_page1 after successful login
+                return redirect(url_for('landing_page1'))
             else:
                 # If no proper password field was found or password didn't match
                 flash('Invalid username or password.', 'danger')
         else:
             flash('Invalid username or password.', 'danger')
     
-    # Customize login template based on selected platform
-    platform = session.get('platform')
-    return render_template('login.html', platform=platform)
+    # Render the login template
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
