@@ -246,32 +246,23 @@ def landing_page2():
     # Security & Justice Suite
     return render_template('landing_page2.html')
 
-@app.route('/select-platform/<platform>')
+@app.route('/select_platform/<platform>')
 def select_platform(platform):
-    """Store the selected platform and redirect to the appropriate page"""
-    # Store the selected platform in session
     session['platform'] = platform
     
-    # Handle different platform redirections
     if platform == 'mediamap':
         return redirect(url_for('mediamap_home'))
-    elif platform == 'guardpass':
-        return redirect(url_for('guardpass'))
-    elif platform == 'contentflow':
-        return redirect(url_for('contentflow'))
-    elif platform == 'justice':
-        return redirect(url_for('justice_ai'))
     elif platform == 'language':
-        return redirect(url_for('language_ai'))
+        return redirect(url_for('translate_page'))
+    elif platform == 'contentflow':
+        return redirect(url_for('contentflow_bp.index'))
     elif platform == 'training':
-        return redirect(url_for('training_lab'))
-    elif platform == 'crimecast':
-        return redirect(url_for('crimecast'))
-    elif platform == 'metadata':
-        return redirect(url_for('metadata.home'))
-    
-    # Fallback for unknown platforms
-    return redirect(url_for('landing_page1'))
+        return redirect(url_for('training_home'))
+    elif platform == 'store':
+        return redirect(url_for('ai_store'))
+    else:
+        flash('Invalid platform selection.', 'danger')
+        return redirect(url_for('landing_page1'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -1597,6 +1588,11 @@ def training_lab():
 @app.route('/crimecast')
 def crimecast():
     return render_template('crimecast.html')
+
+@app.route('/ai-store')
+def ai_store():
+    """AI Store page"""
+    return render_template('ai_store.html')
 
 if __name__ == '__main__':
     sys.path.append('/path/to/your/directory')

@@ -47,7 +47,7 @@
 
 <div class="container mb-5">
     <div class="row g-4">
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <div class="card h-100 platform-card landing-option bg-primary text-white">
                 <div class="card-body text-center">
                     <i class="bi bi-map display-1 mb-3"></i>
@@ -58,7 +58,7 @@
             </div>
         </div>
         
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <div class="card h-100 platform-card landing-option bg-success text-white">
                 <div class="card-body text-center">
                     <i class="bi bi-translate display-1 mb-3"></i>
@@ -69,7 +69,7 @@
             </div>
         </div>
         
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <div class="card h-100 platform-card landing-option bg-info text-white">
                 <div class="card-body text-center">
                     <i class="bi bi-collection-play display-1 mb-3"></i>
@@ -80,7 +80,7 @@
             </div>
         </div>
         
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <div class="card h-100 platform-card landing-option bg-warning text-dark">
                 <div class="card-body text-center">
                     <i class="bi bi-database display-1 mb-3"></i>
@@ -91,13 +91,24 @@
             </div>
         </div>
         
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <div class="card h-100 platform-card landing-option bg-secondary text-white">
                 <div class="card-body text-center">
                     <i class="bi bi-mortarboard display-1 mb-3"></i>
                     <h2 class="card-title">Training Lab</h2>
                     <p class="card-text">AI model training and development</p>
                     <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-light mt-3">Access Training Lab</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 platform-card landing-option bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-shop display-1 mb-3"></i>
+                    <h2 class="card-title">AI Store</h2>
+                    <p class="card-text">Discover and purchase AI models and tools</p>
+                    <a href="{{ url_for('select_platform', platform='store') }}" class="btn btn-light mt-3">Access AI Store</a>
                 </div>
             </div>
         </div>
