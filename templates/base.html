@@ -13,6 +13,9 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         .banner {
             background: linear-gradient(135deg, #0d6efd, #0a58ca);
@@ -90,7 +93,6 @@
         .progress {
             margin-bottom: 0.75rem;
         }
-        {% block extra_css %}{% endblock %}
         
         /* Base layout */
         .content-wrapper {
@@ -116,212 +118,243 @@
                 width: 100% !important;
             }
         }
+        .content {
+            flex: 1;
+        }
+        .footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            background-color: #343a40;
+            color: white;
+        }
+        
+        /* Login/Logout button styles */
+        .auth-buttons {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .auth-buttons .btn {
+            margin-left: 10px;
+        }
+        
+        /* Extra CSS from blocks */
+        {% block extra_css %}{% endblock %}
+        {% block additional_styles %}{% endblock %}
     </style>
 </head>
 <body>
-    <!-- ADD THIS NAVBAR SECTION right after your <body> tag -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <!-- Login/Logout Buttons in Top Right Corner -->
+    <div class="auth-buttons">
+        {% if current_user.is_authenticated %}
+        <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle"></i> {{ current_user.username }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('your_info') }}">Your Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+            </ul>
+        </div>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline-light">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-light">Register</a>
+        {% endif %}
+    </div>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Banner Section -->
+    {% if not hide_banner %}
+    <div class="banner">
         <div class="container">
-            <!-- Show appropriate brand based on selected platform -->
-            {% if session.get('platform') == 'mediamap' %}
-            <a class="navbar-brand" href="{{ url_for('mediamap_home') }}">
-                <i class="bi bi-globe"></i> MediaMap
-            </a>
-            {% elif session.get('platform') == 'guardpass' %}
-            <a class="navbar-brand" href="{{ url_for('guardpass') }}">
-                <i class="bi bi-shield-fill"></i> GuardPass
-            </a>
-            {% elif session.get('platform') == 'contentflow' %}
-            <a class="navbar-brand" href="{{ url_for('contentflow') }}">
-                <i class="bi bi-collection-play"></i> ContentFlow
-            </a>
-            {% else %}
-            <a class="navbar-brand" href="{{ url_for('index') }}">Media Suite</a>
+            <h1>{% block banner_title %}MediaMap AI{% endblock %}</h1>
+            <p>{% block banner_subtitle %}Advanced media analysis and content management{% endblock %}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content with Sidebar -->
+    <div class="container">
+        <div class="row">
+            <!-- Left Sidebar -->
+            {% if not hide_left_sidebar %}
+            <div class="col-md-3 mb-4">
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <h3>Navigation</h3>
+                        <nav class="nav flex-column">
+                            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('mediamap_home') }}">
+                                <i class="bi bi-house-door"></i> Dashboard
+                            </a>
+                            <a class="nav-link {% if active_page == 'analyze' %}active{% endif %}" href="#">
+                                <i class="bi bi-graph-up"></i> Analyze Media
+                            </a>
+                            <a class="nav-link {% if active_page == 'chat' %}active{% endif %}" href="{{ url_for('get_chats') }}">
+                                <i class="bi bi-chat-dots"></i> AI Chat
+                            </a>
+                            <a class="nav-link {% if active_page == 'lessons' %}active{% endif %}" href="{{ url_for('lessons_page') }}">
+                                <i class="bi bi-journal-text"></i> Lessons
+                            </a>
+                            <a class="nav-link {% if active_page == 'map' %}active{% endif %}" href="{{ url_for('map') }}">
+                                <i class="bi bi-geo-alt"></i> Map
+                            </a>
+                            <a class="nav-link {% if active_page == 'translate' %}active{% endif %}" href="{{ url_for('translate_page') }}">
+                                <i class="bi bi-translate"></i> Translate
+                            </a>
+                        </nav>
+                    </div>
+                    
+                    <div class="sidebar-section">
+                        <h3>Organization Info</h3>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Overview</span>
+                            <button id="refresh-org-info" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="org-overview" class="mb-3">
+                            {% if org_info and org_info.Organization_Overview %}
+                                {{ org_info.Organization_Overview }}
+                            {% else %}
+                                Loading...
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="text-muted mb-2">Projects</h5>
+                        <div id="org-projects" class="mb-3">
+                            {% if org_info and org_info.Key_Projects %}
+                                <ul class="list-group list-group-flush">
+                                    {% for project in org_info.Key_Projects %}
+                                        <li class="list-group-item px-0">{{ project }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No projects available</p>
+                            {% endif %}
+                        </div>
+                        
+                        <h5 class="text-muted mb-2">Team</h5>
+                        <div id="org-team">
+                            {% if org_info and org_info.Team_Members %}
+                                <ul class="list-group list-group-flush">
+                                    {% for member in org_info.Team_Members %}
+                                        <li class="list-group-item px-0">{{ member }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No team members available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('feedback') }}" class="btn feedback-btn">
+                        <i class="bi bi-chat-right-text"></i> Send Feedback
+                    </a>
+                </div>
+            </div>
             {% endif %}
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- Platform-specific navigation -->
-                    {% if session.get('platform') == 'mediamap' %}
-                    <!-- MediaMap navigation items -->
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/mediamap' %}active{% endif %}" href="{{ url_for('mediamap_home') }}">Home</a>
-                    </li>
-                    <!-- Removed map link from here -->
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/chat' %}active{% endif %}" href="{{ url_for('chat') }}">Chat</a>
-                    </li>
-                    <!-- Add more MediaMap-specific nav items -->
-                    
-                    {% elif session.get('platform') == 'guardpass' %}
-                    <!-- GuardPass navigation items -->
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/guardpass' %}active{% endif %}" href="{{ url_for('guardpass') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/access-controls' %}active{% endif %}" href="{{ url_for('access_controls') }}">Access Controls</a>
-                    </li>
-                    <!-- Add more GuardPass-specific nav items -->
-                    
-                    {% elif session.get('platform') == 'contentflow' %}
-                    <!-- ContentFlow navigation items -->
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/contentflow' %}active{% endif %}" href="{{ url_for('contentflow') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/content-calendar' %}active{% endif %}" href="{{ url_for('content_calendar') }}">Calendar</a>
-                    </li>
-                    <!-- Add more ContentFlow-specific nav items -->
-                    {% endif %}
-                </ul>
-                
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <span class="nav-link">{{ current_user.username }}</span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('logout') }}">
-                                <i class="bi bi-box-arrow-right"></i> Logout & Switch Platform
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">
-                                <i class="bi bi-box-arrow-in-right"></i> Login
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">
-                                <i class="bi bi-person-plus"></i> Register
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Banner Section -->
-            <div class="col-12">
-                <div class="banner">
-                    {% if session.get('platform') == 'mediamap' %}
-                        <h1><i class="bi bi-globe"></i> MediaMap Dashboard</h1>
-                        <p class="lead">Explore media insights from around the world</p>
-                    {% elif session.get('platform') == 'guardpass' %}
-                        <h1><i class="bi bi-shield-fill"></i> GuardPass</h1>
-                        <p class="lead">Secure yourself and your assets with advanced protection</p>
-                    {% elif session.get('platform') == 'contentflow' %}
-                        <h1><i class="bi bi-collection-play"></i> ContentFlow</h1>
-                        <p class="lead">Optimize the creation of your AI generated content</p>
-                    {% else %}
-                        <h1>Welcome to Media Suite</h1>
-                        <p class="lead">Select a platform to begin</p>
-                    {% endif %}
+            <!-- Main Content Area -->
+            <div class="{% if hide_left_sidebar and hide_right_sidebar %}col-md-12{% elif hide_left_sidebar or hide_right_sidebar %}col-md-9{% else %}col-md-6{% endif %} mb-4">
+                <div class="content-area">
+                    {% block main_content %}{% endblock %}
                 </div>
             </div>
             
-            <div class="main-content {% if hide_right_sidebar is defined and hide_right_sidebar %}main-content-full{% endif %}">
-                <div class="row g-4">
-                    <!-- Left Sidebar -->
-                    {% if session.get('platform') == 'mediamap' %}
-                    <div class="col-md-3">
-                        <div class="sidebar">
-                            <nav class="d-flex flex-column">
-                                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
-                                    <i class="bi bi-house-door"></i> Home
-                                </a>
-                                <a href="/lessons-page" class="nav-link {% if request.path == '/lessons-page' %}active{% endif %}">
-                                    <i class="bi bi-journal-text"></i> Daily Lessons
-                                </a>
-                                <a class="nav-link {% if request.path == '/map' %}active{% endif %}" href="{{ url_for('map') }}">
-                                    <i class="bi bi-globe"></i> World Map
-                                </a>
-                                <a href="/translate" class="nav-link {% if request.path == '/translate' %}active{% endif %}">
-                                    <i class="bi bi-translate"></i> Language Translation
-                                </a>
-                                <a href="/recommended-ai-tools" class="nav-link {% if request.path == '/recommended-ai-tools' %}active{% endif %}">
-                                    <i class="bi bi-robot"></i> Recommended AI Tools
-                                </a>
-                                <a href="/generate-insights" class="nav-link {% if request.path == '/generate-insights' %}active{% endif %}">
-                                    <i class="bi bi-lightbulb"></i> Generate Insights
-                                </a>
-                                <a href="/your-info" class="nav-link {% if request.path == '/your-info' %}active{% endif %}">
-                                    <i class="bi bi-person"></i> Your Info
-                                </a>
-                                <a href="/chats" class="nav-link {% if request.path == '/chats' %}active{% endif %}" href="{{ url_for('get_chats') }}">
-                                    <i class="bi bi-chat-text"></i> Chat History
-                                </a>
-                            </nav>
-                            <hr>
-                            <a href="/feedback" class="btn feedback-btn">
-                                <i class="bi bi-chat-dots"></i> Send Feedback
+            <!-- Right Sidebar -->
+            {% if not hide_right_sidebar %}
+            <div class="col-md-3 mb-4">
+                <div class="sidebar">
+                    <div class="sidebar-section">
+                        <h3>Recent Activity</h3>
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Media Analysis</h6>
+                                    <small>3 days ago</small>
+                                </div>
+                                <p class="mb-1">Analyzed TikTok video performance</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">AI Chat</h6>
+                                    <small>5 days ago</small>
+                                </div>
+                                <p class="mb-1">Discussed content strategy</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Lesson Completed</h6>
+                                    <small>1 week ago</small>
+                                </div>
+                                <p class="mb-1">Content Distribution Strategies</p>
                             </a>
                         </div>
                     </div>
-                    {% endif %}
                     
-                    <!-- Main Content -->
-                    <div class="col-md-{% if hide_right_sidebar is defined and hide_right_sidebar %}9{% else %}6{% endif %}">
-                        <div class="content-area">
-                            {% block content %}{% endblock %}
+                    <div class="sidebar-section">
+                        <h3>Progress</h3>
+                        <p class="text-muted mb-2">Lessons Completed</p>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                        </div>
+                        
+                        <p class="text-muted mb-2 mt-3">Media Analyzed</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 40%;" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">40%</div>
+                        </div>
+                        
+                        <p class="text-muted mb-2 mt-3">AI Interactions</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 80%;" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100">80%</div>
                         </div>
                     </div>
                     
-                    <!-- Right Sidebar -->
-                    {% if hide_right_sidebar is not defined or not hide_right_sidebar %}
-                    <div class="col-md-3">
-                        <div class="sidebar">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="mb-0">Organization Info</h3>
-                                <button id="refresh-org-info" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
-                            </div>
-                            <div class="sidebar-section">
-                                <h3>Name of Your Organisation</h3>
-                                <div id="org-overview">Paul Media</div>
-                            </div>
-                            <div class="sidebar-section">
-                                <h3>Key Projects</h3>
-                                <div id="org-projects">
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item px-0">Project 1</li>
-                                        <li class="list-group-item px-0">Project 2</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="sidebar-section">
-                                <h3>Team Members</h3>
-                                <div id="org-team">
-                                    <ul class="list-group list-group-flush">
-                                        <li class="list-group-item px-0">Team Member 1</li>
-                                        <li class="list-group-item px-0">Team Member 2</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="sidebar-section">
-                                <h3>AI Implementation Scores</h3>
-                                <div class="progress" style="height: 20px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 85%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">Data Utilization: 85%</div>
-                                </div>
-                                <div class="progress" style="height: 20px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: 70%;" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">Automation Level: 70%</div>
-                                </div>
-                                <div class="progress" style="height: 20px;">
-                                    <div class="progress-bar bg-info" role="progressbar" style="width: 90%;" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100">AI Integration: 90%</div>
-                                </div>
-                            </div>
+                    <div class="sidebar-section">
+                        <h3>Recommended Tools</h3>
+                        <div class="list-group list-group-flush">
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <i class="bi bi-camera-video text-primary me-2"></i> Video Analyzer
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <i class="bi bi-bar-chart text-success me-2"></i> Engagement Tracker
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action px-0 border-0">
+                                <i class="bi bi-people text-info me-2"></i> Audience Insights
+                            </a>
                         </div>
                     </div>
-                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Develop AI</h3>
+                    <p>A comprehensive set of AI tools for professionals.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2025 Develop AI. All rights reserved.</p>
                 </div>
             </div>
         </div>

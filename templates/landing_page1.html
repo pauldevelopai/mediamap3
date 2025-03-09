@@ -1,144 +1,112 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media & AI Suite</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .header {
-            background: linear-gradient(135deg, #0d6efd, #0a58ca);
-            color: white;
-            padding: 3rem 0;
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        .platform-card {
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            height: 100%;
-        }
-        .platform-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-        }
-        .platform-features {
-            margin: 1.5rem 0;
-            text-align: left;
-            padding-left: 2rem;
-        }
-        .platform-features li {
-            margin-bottom: 0.5rem;
-        }
-        .footer {
-            margin-top: auto;
-            padding: 2rem 0;
-            background-color: #343a40;
-            color: white;
-        }
-        .landing-option {
-            padding: 3rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-        .landing-option:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="container">
-            <h1 class="display-4">Media & AI Suite</h1>
-            <p class="lead">Select a tool from our Media & AI platforms</p>
-        </div>
-    </div>
+{% extends "base.html" %}
 
-    <div class="container mb-5">
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 platform-card landing-option bg-primary text-white">
-                    <div class="card-body text-center">
-                        <i class="bi bi-map display-1 mb-3"></i>
-                        <h2 class="card-title">MediaMap</h2>
-                        <p class="card-text">Content analysis and media strategy platform</p>
-                        <a href="{{ url_for('select_platform', platform='mediamap') }}" class="btn btn-light mt-3">Access MediaMap</a>
-                    </div>
+{% block title %}MediaMap AI - Content & Development Suite{% endblock %}
+
+{% set hide_left_sidebar = true %}
+{% set hide_right_sidebar = true %}
+
+{% block additional_styles %}
+.header {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    color: white;
+    padding: 3rem 0;
+    text-align: center;
+    margin-bottom: 3rem;
+}
+.platform-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    height: 100%;
+}
+.platform-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+.platform-features {
+    margin: 1.5rem 0;
+    text-align: left;
+    padding-left: 2rem;
+}
+.platform-features li {
+    margin-bottom: 0.5rem;
+}
+.landing-option {
+    padding: 3rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+.landing-option:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+{% endblock %}
+
+{% block main_content %}
+<div class="header">
+    <div class="container">
+        <h1 class="display-4">MediaMap AI</h1>
+        <p class="lead">Created by Develop AI</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 platform-card landing-option bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-map display-1 mb-3"></i>
+                    <h2 class="card-title">AI Map</h2>
+                    <p class="card-text">Content analysis and media strategy platform</p>
+                    <a href="{{ url_for('select_platform', platform='mediamap') }}" class="btn btn-light mt-3">Access AI Map</a>
                 </div>
             </div>
-            
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 platform-card landing-option bg-success text-white">
-                    <div class="card-body text-center">
-                        <i class="bi bi-translate display-1 mb-3"></i>
-                        <h2 class="card-title">Language AI</h2>
-                        <p class="card-text">Translation and localization platform</p>
-                        <a href="{{ url_for('select_platform', platform='language') }}" class="btn btn-light mt-3">Access Language AI</a>
-                    </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 platform-card landing-option bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-translate display-1 mb-3"></i>
+                    <h2 class="card-title">Voices AI</h2>
+                    <p class="card-text">Translation and localization platform</p>
+                    <a href="{{ url_for('select_platform', platform='language') }}" class="btn btn-light mt-3">Access Voices AI</a>
                 </div>
             </div>
-            
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 platform-card landing-option bg-info text-white">
-                    <div class="card-body text-center">
-                        <i class="bi bi-collection-play display-1 mb-3"></i>
-                        <h2 class="card-title">ContentFlow</h2>
-                        <p class="card-text">Content creation and management system</p>
-                        <a href="{{ url_for('select_platform', platform='contentflow') }}" class="btn btn-light mt-3">Access ContentFlow</a>
-                    </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 platform-card landing-option bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-collection-play display-1 mb-3"></i>
+                    <h2 class="card-title">Content Flow</h2>
+                    <p class="card-text">Content creation and management system</p>
+                    <a href="{{ url_for('select_platform', platform='contentflow') }}" class="btn btn-light mt-3">Access ContentFlow</a>
                 </div>
             </div>
-            
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 platform-card landing-option bg-warning text-dark">
-                    <div class="card-body text-center">
-                        <i class="bi bi-database display-1 mb-3"></i>
-                        <h2 class="card-title">Metadata</h2>
-                        <p class="card-text">Media metadata management system</p>
-                        <a href="{{ url_for('metadata.home') }}" class="btn btn-dark mt-3">Access Metadata</a>
-                    </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 platform-card landing-option bg-warning text-dark">
+                <div class="card-body text-center">
+                    <i class="bi bi-database display-1 mb-3"></i>
+                    <h2 class="card-title">Metadata</h2>
+                    <p class="card-text">Media metadata management system</p>
+                    <a href="{{ url_for('metadata.home') }}" class="btn btn-dark mt-3">Access Metadata</a>
                 </div>
             </div>
-            
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 platform-card landing-option bg-secondary text-white">
-                    <div class="card-body text-center">
-                        <i class="bi bi-mortarboard display-1 mb-3"></i>
-                        <h2 class="card-title">Training Lab</h2>
-                        <p class="card-text">AI model training and development</p>
-                        <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-light mt-3">Access Training Lab</a>
-                    </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 platform-card landing-option bg-secondary text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-mortarboard display-1 mb-3"></i>
+                    <h2 class="card-title">Training Lab</h2>
+                    <p class="card-text">AI model training and development</p>
+                    <a href="{{ url_for('select_platform', platform='training') }}" class="btn btn-light mt-3">Access Training Lab</a>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h3>Develop AI</h3>
-                    <p>A comprehensive set of AI tools for professionals.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p>&copy; 2025 Develop AI. All rights reserved.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> 
+</div>
+{% endblock %} 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, Blueprint
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -28,8 +28,46 @@ from insightface.app import FaceAnalysis
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-from media_app.contentflow.app import contentflow_bp
-from media_app.metadata.app import metadata_bp
+
+# Create the contentflow blueprint
+contentflow_bp = Blueprint('contentflow', __name__, url_prefix='/contentflow')
+
+# Define routes for the contentflow blueprint
+@contentflow_bp.route('/')
+def index():
+    """ContentFlow home page"""
+    return render_template('contentflow.html')
+
+@contentflow_bp.route('/dashboard')
+def dashboard():
+    """ContentFlow dashboard page"""
+    return render_template('contentflow_dashboard.html')
+
+@contentflow_bp.route('/analytics')
+def analytics():
+    """ContentFlow analytics page"""
+    return render_template('contentflow_analytics.html')
+
+# Create the metadata blueprint
+metadata_bp = Blueprint('metadata', __name__, url_prefix='/metadata')
+
+# Define routes for the metadata blueprint
+@metadata_bp.route('/')
+def home():
+    """Metadata home page"""
+    return render_template('metadata_home.html')
+
+@metadata_bp.route('/add')
+def add():
+    """Add metadata page"""
+    return render_template('add_metadata.html')
+
+@metadata_bp.route('/add', methods=['POST'])
+def add_post():
+    """Process metadata form submission"""
+    data = request.json
+    # Process the metadata data here
+    return jsonify({'success': True, 'message': 'Metadata added successfully'})
 
 # Load environment variables
 load_dotenv()
@@ -210,27 +248,30 @@ def landing_page2():
 
 @app.route('/select-platform/<platform>')
 def select_platform(platform):
-    """Store the selected platform and redirect to login"""
-    if platform in ['mediamap', 'guardpass', 'contentflow']:
-        session['platform'] = platform
-        if current_user.is_authenticated:
-            return redirect(url_for('logout'))
-        return redirect(url_for('login'))
+    """Store the selected platform and redirect to the appropriate page"""
+    # Store the selected platform in session
+    session['platform'] = platform
     
-    # Add handling for new platforms
-    if platform == 'justice':
+    # Handle different platform redirections
+    if platform == 'mediamap':
+        return redirect(url_for('mediamap_home'))
+    elif platform == 'guardpass':
+        return redirect(url_for('guardpass'))
+    elif platform == 'contentflow':
+        return redirect(url_for('contentflow'))
+    elif platform == 'justice':
         return redirect(url_for('justice_ai'))
     elif platform == 'language':
         return redirect(url_for('language_ai'))
     elif platform == 'training':
         return redirect(url_for('training_lab'))
-    
-    # Updated to CrimeCast
-    if platform == 'crimecast':
+    elif platform == 'crimecast':
         return redirect(url_for('crimecast'))
+    elif platform == 'metadata':
+        return redirect(url_for('metadata.home'))
     
     # Fallback for unknown platforms
-    return redirect(url_for('index'))
+    return redirect(url_for('landing_page1'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -290,10 +331,9 @@ def logout():
 @app.route('/mediamap')
 @login_required
 def mediamap_home():
-    """MediaMap home page with platform check"""
-    if session.get('platform') != 'mediamap':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
+    """MediaMap home page"""
+    # Set the platform in session if not already set
+    session['platform'] = 'mediamap'
     return render_template('index.html')
 
 @app.route('/guardpass')
@@ -308,10 +348,10 @@ def guardpass():
 @app.route('/contentflow')
 @login_required
 def contentflow():
-    """ContentFlow home page with platform check"""
-    if session.get('platform') != 'contentflow':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
+    """ContentFlow home page"""
+    # Set the platform in session
+    session['platform'] = 'contentflow'
+    # Render the complete contentflow template
     return render_template('contentflow.html', hide_right_sidebar=True)
 
 @app.route('/access-controls')
@@ -1228,9 +1268,8 @@ def feedback():
 @login_required
 def content_calendar():
     """Content Calendar page for ContentFlow"""
-    if session.get('platform') != 'contentflow':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
+    # Set the platform in session
+    session['platform'] = 'contentflow'
     return render_template('content_calendar.html', hide_right_sidebar=True)
 
 @app.cli.command("reset-db")
@@ -1390,13 +1429,12 @@ def identify_face(img_data, threshold=0.5):  # Lower threshold for ArcFace
             embedding_path = os.path.join(face_db_path, filename)
             print(f"Loading embedding from: {embedding_path}")
             embedding = np.load(embedding_path)
-            print(f"Loaded embedding shape: {embedding.shape}")
-            
+
             # Calculate similarity - cosine similarity
             similarity = np.dot(current_embedding, embedding) / (
                 np.linalg.norm(current_embedding) * np.linalg.norm(embedding)
             )
-            
+
             print(f"Similarity with {user_id}: {similarity}")
             
             # Keep track of best match
@@ -1561,4 +1599,5 @@ def crimecast():
     return render_template('crimecast.html')
 
 if __name__ == '__main__':
+    sys.path.append('/path/to/your/directory')
     app.run(host='0.0.0.0', port=8000, debug=True) 

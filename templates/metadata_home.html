@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Metadata Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Metadata Management</h1>
+            <p class="lead">Manage metadata for your content</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('metadata.add') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Metadata
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Your Metadata</h5>
+                    <p>No metadata entries found. Click "Add New Metadata" to create your first entry.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
