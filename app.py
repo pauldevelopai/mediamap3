@@ -15,15 +15,9 @@ import threading
 import uuid
 import re
 from urllib.parse import urlparse
-import numpy as np
-import cv2
-from PIL import Image
 import io
 import traceback
 import sys
-import torch.nn as nn
-import torch.nn.functional as F
-import torchvision.transforms as transforms
 from functools import wraps
 from sqlalchemy import Column, Boolean, text
 from sqlalchemy.exc import OperationalError
