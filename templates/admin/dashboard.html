@@ -1,0 +1,189 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Admin Dashboard | MediaMap{% endblock %}
+
+{% block header %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-admin card-users shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ user_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{{ url_for('admin_users') }}" class="text-decoration-none">View Details <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-admin card-analyses shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Media Analyses</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ analysis_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-graph-up fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{{ url_for('admin_analyses') }}" class="text-decoration-none">View Details <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-admin card-chats shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Chats</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ chat_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-chat-dots fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{{ url_for('admin_chats') }}" class="text-decoration-none">View Details <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-admin card-lessons shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Lessons</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ lesson_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-book fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{{ url_for('admin_lessons') }}" class="text-decoration-none">View Details <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold">Recent Users</h6>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Admin</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Info -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold">System Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Application</h5>
+                        <ul class="list-group mb-4">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Flask Version
+                                <span class="badge bg-primary rounded-pill">{{ flask_version }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Database
+                                <span class="badge bg-primary rounded-pill">SQLite</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Statistics</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Users
+                                <span class="badge bg-primary rounded-pill">{{ user_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Admin Users
+                                <span class="badge bg-primary rounded-pill">{{ admin_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Chats
+                                <span class="badge bg-primary rounded-pill">{{ chat_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Analyses
+                                <span class="badge bg-primary rounded-pill">{{ analysis_count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

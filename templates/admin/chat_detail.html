@@ -1,0 +1,97 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Chat Details | MediaMap Admin{% endblock %}
+
+{% block header %}Chat Details: {{ chat.title or 'Untitled Chat' }}{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold">Chat Information</h6>
+        <a href="{{ url_for('admin_chats') }}" class="btn btn-sm btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Chats
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Chat ID
+                        <span class="badge bg-primary rounded-pill">{{ chat.id }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Title
+                        <span>{{ chat.title or 'Untitled Chat' }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Created
+                        <span>{{ chat.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        User
+                        <a href="{{ url_for('admin_user_detail', user_id=chat.user_id) }}">
+                            {{ chat.user.username if chat.user else 'Unknown User' }}
+                        </a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Messages
+                        <span class="badge bg-primary rounded-pill">{{ messages|length }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Last Updated
+                        <span>{{ chat.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">Chat Messages</h6>
+    </div>
+    <div class="card-body">
+        <div class="chat-container p-3" style="max-height: 600px; overflow-y: auto;">
+            {% for message in messages %}
+            <div class="chat-message mb-3 {% if message.role == 'user' %}user-message{% else %}assistant-message{% endif %}">
+                <div class="card {% if message.role == 'user' %}bg-light border-primary{% else %}bg-primary text-white{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>
+                            <strong>{{ message.role|title }}</strong>
+                        </span>
+                        <small>{{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="message-content">
+                            {{ message.content|nl2br }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-message {
+        margin-left: 20%;
+    }
+    
+    .assistant-message {
+        margin-right: 20%;
+    }
+    
+    .message-content {
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %} 

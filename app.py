@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, Blueprint
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, Blueprint, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -28,6 +28,9 @@ from insightface.app import FaceAnalysis
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+from functools import wraps
+from sqlalchemy import Column, Boolean, text
+from sqlalchemy.exc import OperationalError
 
 # Create the contentflow blueprint
 contentflow_bp = Blueprint('contentflow', __name__, url_prefix='/contentflow')
@@ -268,6 +271,9 @@ def select_platform(platform):
 def login():
     """Login route that redirects to landing_page1 after successful login"""
     if current_user.is_authenticated:
+        # Check if user is admin and redirect accordingly
+        if hasattr(current_user, 'is_admin') and current_user.is_admin:
+            return redirect(url_for('admin_dashboard'))
         # Redirect to landing_page1 if already logged in
         return redirect(url_for('landing_page1'))
     
@@ -299,6 +305,15 @@ def login():
             # If we found a password field, verify the password
             if password_field and check_password_hash(getattr(user, password_field), password):
                 login_user(user)
+                
+                # Update last login time
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                # Check if user is admin and redirect accordingly
+                if hasattr(user, 'is_admin') and user.is_admin:
+                    return redirect(url_for('admin_dashboard'))
+                
                 # Redirect to landing_page1 after successful login
                 return redirect(url_for('landing_page1'))
             else:
@@ -1228,36 +1243,176 @@ def generate_insights():
 def your_info():
     return render_template('your_info.html')
 
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    # Admin dashboard logic here
-    return render_template('admin_dashboard.html')
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('You need to login first.', 'danger')
+            return redirect(url_for('login'))
+        
+        # Check if user has admin attribute and it's True
+        if not hasattr(current_user, 'is_admin') or not current_user.is_admin:
+            flash('You need admin privileges to access this page.', 'danger')
+            return redirect(url_for('landing_page1'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
-@app.route('/feedback', methods=['GET', 'POST'])
-def feedback():
+# Admin routes
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Admin dashboard showing system overview"""
+    user_count = User.query.count()
+    analysis_count = MediaAnalysis.query.count()
+    chat_count = Chat.query.count()
+    lesson_count = Lesson.query.count()
+    
+    # Count admin users
+    admin_count = 0
+    for user in User.query.all():
+        if hasattr(user, 'is_admin') and user.is_admin:
+            admin_count += 1
+    
+    # Get Flask version
+    import flask
+    flask_version = flask.__version__
+    
+    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    
+    return render_template(
+        'admin/dashboard.html', 
+        user_count=user_count,
+        analysis_count=analysis_count,
+        chat_count=chat_count,
+        lesson_count=lesson_count,
+        recent_users=recent_users,
+        admin_count=admin_count,
+        flask_version=flask_version
+    )
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    """Admin page to view all users"""
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', users=users)
+
+@app.route('/admin/user/<int:user_id>')
+@login_required
+@admin_required
+def admin_user_detail(user_id):
+    """Admin page to view details of a specific user"""
+    user = User.query.get_or_404(user_id)
+    
+    # Get user's media analyses
+    analyses = MediaAnalysis.query.filter_by(user_id=user_id).order_by(MediaAnalysis.created_at.desc()).all()
+    
+    # Get user's chats
+    chats = Chat.query.filter_by(user_id=user_id).order_by(Chat.created_at.desc()).all()
+    
+    # Get user's lesson progress
+    lesson_progress = UserLesson.query.filter_by(user_id=user_id).all()
+    
+    # Get user's translations
+    translations = Translation.query.filter_by(user_id=user_id).order_by(Translation.created_at.desc()).all()
+    
+    return render_template(
+        'admin/user_detail.html',
+        user=user,
+        analyses=analyses,
+        chats=chats,
+        lesson_progress=lesson_progress,
+        translations=translations
+    )
+
+@app.route('/admin/chats')
+@login_required
+@admin_required
+def admin_chats():
+    """Admin page to view all chats"""
+    chats = Chat.query.order_by(Chat.created_at.desc()).all()
+    return render_template('admin/chats.html', chats=chats)
+
+@app.route('/admin/chat/<int:chat_id>')
+@login_required
+@admin_required
+def admin_chat_detail(chat_id):
+    """Admin page to view details of a specific chat"""
+    chat = Chat.query.get_or_404(chat_id)
+    messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
+    return render_template('admin/chat_detail.html', chat=chat, messages=messages)
+
+@app.route('/admin/analyses')
+@login_required
+@admin_required
+def admin_analyses():
+    """Admin page to view all media analyses"""
+    analyses = MediaAnalysis.query.order_by(MediaAnalysis.created_at.desc()).all()
+    return render_template('admin/analyses.html', analyses=analyses)
+
+@app.route('/admin/lessons')
+@login_required
+@admin_required
+def admin_lessons():
+    """Admin page to view all lessons"""
+    lessons = Lesson.query.order_by(Lesson.order).all()
+    return render_template('admin/lessons.html', lessons=lessons)
+
+@app.route('/admin/create_admin', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def create_admin():
+    """Admin page to create a new admin user"""
     if request.method == 'POST':
-        # In a real application, you would process the form data here
-        # For example, save to database or send email to admin
-        name = request.form.get('name')
+        username = request.form.get('username')
         email = request.form.get('email')
-        feedback_type = request.form.get('feedbackType')
-        subject = request.form.get('subject')
-        message = request.form.get('message')
-        followup = 'followup' in request.form
+        password = request.form.get('password')
         
-        # Process the feedback (e.g., save to database, send email)
-        # ...
+        # Check if user already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Username already exists', 'danger')
+            return redirect(url_for('create_admin'))
         
-        # For AJAX requests, return JSON
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True})
+        # Create new admin user
+        new_admin = User(
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(password),
+            is_admin=True
+        )
         
-        # For regular form submissions, redirect with a flash message
-        flash('Thank you for your feedback!', 'success')
-        return redirect(url_for('feedback'))
+        db.session.add(new_admin)
+        db.session.commit()
         
-    # For GET requests, just render the template
-    return render_template('feedback.html')
+        flash(f'Admin user {username} created successfully', 'success')
+        return redirect(url_for('admin_users'))
+    
+    return render_template('admin/create_admin.html')
+
+@app.route('/admin/toggle_admin/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_admin(user_id):
+    """Toggle admin status for a user"""
+    user = User.query.get_or_404(user_id)
+    
+    # Prevent removing admin status from yourself
+    if user.id == current_user.id:
+        flash('You cannot remove your own admin status', 'danger')
+        return redirect(url_for('admin_users'))
+    
+    # Toggle admin status
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    
+    status = 'granted' if user.is_admin else 'removed'
+    flash(f'Admin status {status} for {user.username}', 'success')
+    return redirect(url_for('admin_users'))
 
 @app.route('/content-calendar')
 @login_required
@@ -1306,7 +1461,63 @@ def reset_db():
 
 # Create database tables
 with app.app_context():
+    # First, create all tables that are defined in models
     db.create_all()
+    
+    # Check if User model has all required columns
+    from sqlalchemy import inspect, text
+    inspector = inspect(db.engine)
+    
+    # Use 'users' table name instead of 'user' to match the model definition
+    existing_columns = [col['name'] for col in inspector.get_columns('users')]
+    
+    # Define all expected columns based on your User model
+    expected_columns = {
+        'is_admin': 'BOOLEAN DEFAULT 0',
+        'last_login': 'DATETIME',
+        'latitude': 'FLOAT',
+        'longitude': 'FLOAT',
+        'location_name': 'VARCHAR(200)',
+        'has_face_id': 'BOOLEAN DEFAULT 0'
+    }
+    
+    # Add any missing columns
+    with db.engine.connect() as conn:
+        for column_name, column_type in expected_columns.items():
+            if column_name not in existing_columns:
+                print(f"Adding {column_name} column to User model")
+                # Use text() for raw SQL execution
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"))
+                conn.commit()
+                print(f"{column_name} column added successfully")
+    
+    # Check if any admin user exists
+    admin_exists = False
+    try:
+        admin_user = User.query.filter_by(is_admin=True).first()
+        if admin_user:
+            admin_exists = True
+            print(f"Admin user exists: {admin_user.username}")
+    except Exception as e:
+        print(f"Error checking for admin users: {str(e)}")
+    
+    # Create default admin if none exists
+    if not admin_exists:
+        print("Creating default admin user")
+        try:
+            admin_user = User(
+                username="admin",
+                email="admin@example.com",
+                password_hash=generate_password_hash("admin123"),
+                is_admin=True  # Set is_admin directly in constructor
+            )
+            
+            db.session.add(admin_user)
+            db.session.commit()
+            print("Default admin user created with username 'admin' and password 'admin123'")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating admin user: {str(e)}")
 
 # Create directory for storing face embeddings if it doesn't exist
 os.makedirs('face_db', exist_ok=True)
@@ -1597,6 +1808,32 @@ def crimecast():
 def ai_store():
     """AI Store page"""
     return render_template('ai_store.html')
+
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    if request.method == 'POST':
+        # In a real application, you would process the form data here
+        # For example, save to database or send email to admin
+        name = request.form.get('name')
+        email = request.form.get('email')
+        feedback_type = request.form.get('feedbackType')
+        subject = request.form.get('subject')
+        message = request.form.get('message')
+        followup = 'followup' in request.form
+        
+        # Process the feedback (e.g., save to database, send email)
+        # ...
+        
+        # For AJAX requests, return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True})
+        
+        # For regular form submissions, redirect with a flash message
+        flash('Thank you for your feedback!', 'success')
+        return redirect(url_for('feedback'))
+        
+    # For GET requests, just render the template
+    return render_template('feedback.html')
 
 if __name__ == '__main__':
     sys.path.append('/path/to/your/directory')

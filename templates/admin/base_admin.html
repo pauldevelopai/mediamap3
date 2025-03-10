@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MediaMap Admin{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        .admin-sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+            color: white;
+        }
+        .admin-sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1rem;
+            margin: 0.2rem 0;
+        }
+        .admin-sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .admin-sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .admin-content {
+            padding: 2rem;
+        }
+        .admin-header {
+            background-color: #f8f9fa;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .card-admin {
+            border-left: 4px solid #0d6efd;
+        }
+        .card-admin.card-users {
+            border-left-color: #0dcaf0;
+        }
+        .card-admin.card-analyses {
+            border-left-color: #198754;
+        }
+        .card-admin.card-chats {
+            border-left-color: #dc3545;
+        }
+        .card-admin.card-lessons {
+            border-left-color: #fd7e14;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 admin-sidebar p-0">
+                <div class="d-flex flex-column p-3">
+                    <a href="{{ url_for('admin_dashboard') }}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        <span class="fs-4">Admin Panel</span>
+                    </a>
+                    <hr>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.endpoint == 'admin_users' or request.endpoint == 'admin_user_detail' %}active{% endif %}">
+                                <i class="bi bi-people me-2"></i>
+                                Users
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_chats') }}" class="nav-link {% if request.endpoint == 'admin_chats' or request.endpoint == 'admin_chat_detail' %}active{% endif %}">
+                                <i class="bi bi-chat-dots me-2"></i>
+                                Chats
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_analyses') }}" class="nav-link {% if request.endpoint == 'admin_analyses' %}active{% endif %}">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Media Analyses
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('admin_lessons') }}" class="nav-link {% if request.endpoint == 'admin_lessons' %}active{% endif %}">
+                                <i class="bi bi-book me-2"></i>
+                                Lessons
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('create_admin') }}" class="nav-link {% if request.endpoint == 'create_admin' %}active{% endif %}">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Create Admin
+                            </a>
+                        </li>
+                    </ul>
+                    <hr>
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <strong>{{ current_user.username }}</strong>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                            <li><a class="dropdown-item" href="{{ url_for('landing_page1') }}">Back to App</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main content -->
+            <div class="col-md-10 p-0">
+                <!-- Header -->
+                <div class="admin-header d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0">{% block header %}Admin Dashboard{% endblock %}</h1>
+                    <div>
+                        <a href="{{ url_for('landing_page1') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to App
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Flash messages -->
+                <div class="container-fluid mt-3">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                
+                <!-- Content -->
+                <div class="admin-content">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

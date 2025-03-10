@@ -226,6 +226,9 @@
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><a class="dropdown-item" href="{{ url_for('your_info') }}">Your Profile</a></li>
+                {% if current_user.is_admin %}
+                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a></li>
+                {% endif %}
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
             </ul>

@@ -1,0 +1,85 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}User Management | MediaMap Admin{% endblock %}
+
+{% block header %}User Management{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold">All Users</h6>
+        <a href="{{ url_for('create_admin') }}" class="btn btn-sm btn-success">
+            <i class="bi bi-person-plus"></i> Create Admin
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="usersTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Admin</th>
+                        <th>Created</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                            <span class="badge bg-success">Yes</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</td>
+                        <td>{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('admin_user_detail', user_id=user.id) }}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <form action="{{ url_for('toggle_admin', user_id=user.id) }}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm {% if user.is_admin %}btn-warning{% else %}btn-success{% endif %}">
+                                        {% if user.is_admin %}
+                                        <i class="bi bi-person-dash"></i> Remove Admin
+                                        {% else %}
+                                        <i class="bi bi-person-check"></i> Make Admin
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#usersTable').DataTable({
+            order: [[0, 'desc']]
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+{% endblock %} 

@@ -1,0 +1,96 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Media Analyses | MediaMap Admin{% endblock %}
+
+{% block header %}Media Analyses{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold">All Media Analyses</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="analysesTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Media URL</th>
+                        <th>User</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analysis in analyses %}
+                    <tr>
+                        <td>{{ analysis.id }}</td>
+                        <td>
+                            <a href="{{ analysis.media_url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 250px;">
+                                {{ analysis.media_url }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if analysis.user %}
+                            <a href="{{ url_for('admin_user_detail', user_id=analysis.user_id) }}">
+                                {{ analysis.user.username }}
+                            </a>
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </td>
+                        <td>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-analysis" data-bs-toggle="modal" data-bs-target="#analysisModal" data-analysis="{{ analysis.analysis_result|tojson }}">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Modal -->
+<div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analysisModalLabel">Media Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="analysisContent" class="p-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#analysesTable').DataTable({
+            order: [[0, 'desc']]
+        });
+        
+        // Handle analysis view buttons
+        $('.view-analysis').on('click', function() {
+            const analysis = JSON.parse($(this).attr('data-analysis'));
+            $('#analysisContent').html(`<pre>${analysis}</pre>`);
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+{% endblock %} 
