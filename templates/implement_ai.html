@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Implement AI{% endblock %}
+
+{% block additional_styles %}
+.dashboard-card {
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #0d6efd;
+}
+.ai-tool {
+    border-left: 4px solid #0d6efd;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+{% endblock %}
+
+{% block main_content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 mb-4">Implement AI</h1>
+            <p class="lead">Streamline your workflow with AI implementation and automation tools.</p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-robot feature-icon"></i>
+                    <h3>AI Workflow Builder</h3>
+                    <p>Create custom AI workflows to automate repetitive tasks and processes.</p>
+                    <a href="#" class="btn btn-primary mt-3">Build Workflow</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear-wide-connected feature-icon"></i>
+                    <h3>Integration Hub</h3>
+                    <p>Connect your AI tools with existing systems and applications.</p>
+                    <a href="#" class="btn btn-primary mt-3">Explore Integrations</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up feature-icon"></i>
+                    <h3>Performance Analytics</h3>
+                    <p>Monitor and optimize your AI implementations with detailed analytics.</p>
+                    <a href="#" class="btn btn-primary mt-3">View Analytics</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Recent AI Implementations</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="ai-tool">
+                <h4>Content Generation Pipeline</h4>
+                <p>Automated workflow for creating, reviewing, and publishing content using AI.</p>
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-success">Active</span>
+                    <small class="text-muted">Last run: Today</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="ai-tool">
+                <h4>Customer Support Assistant</h4>
+                <p>AI-powered chatbot handling customer inquiries and support tickets.</p>
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-success">Active</span>
+                    <small class="text-muted">Last run: 2 hours ago</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="ai-tool">
+                <h4>Data Analysis Workflow</h4>
+                <p>Automated data processing and analysis pipeline with visualization.</p>
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-warning">Maintenance</span>
+                    <small class="text-muted">Last run: Yesterday</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="ai-tool">
+                <h4>Email Marketing Optimizer</h4>
+                <p>AI tool for optimizing email campaigns and analyzing performance.</p>
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-success">Active</span>
+                    <small class="text-muted">Last run: 3 days ago</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h3>Getting Started with AI Implementation</h3>
+                    <p>Follow these steps to start implementing AI in your workflow:</p>
+                    <ol>
+                        <li>Identify repetitive tasks that could benefit from automation</li>
+                        <li>Select the appropriate AI tools for your specific needs</li>
+                        <li>Create a workflow using our AI Workflow Builder</li>
+                        <li>Connect with existing systems through our Integration Hub</li>
+                        <li>Monitor performance and optimize as needed</li>
+                    </ol>
+                    <a href="#" class="btn btn-primary">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

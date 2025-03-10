@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}AI Utility{% endblock %}
+
+{% block additional_styles %}
+.dashboard-card {
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #0d6efd;
+}
+.ai-tool {
+    border-left: 4px solid #0d6efd;
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+{% endblock %}
+
+{% block main_content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4 mb-4">AI Utility</h1>
+            <p class="lead">Change your media business into a utility that your audience can't live without.</p>
+        </div>
+    </div>
+
+    // ... existing code ...
+</div>
+{% endblock %} 

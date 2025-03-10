@@ -17,14 +17,10 @@ import re
 from urllib.parse import urlparse
 import numpy as np
 import cv2
-from facenet_pytorch import MTCNN, InceptionResnetV1
-import torch
 from PIL import Image
 import io
 import traceback
 import sys
-import insightface
-from insightface.app import FaceAnalysis
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
@@ -32,24 +28,24 @@ from functools import wraps
 from sqlalchemy import Column, Boolean, text
 from sqlalchemy.exc import OperationalError
 
-# Create the contentflow blueprint
-contentflow_bp = Blueprint('contentflow', __name__, url_prefix='/contentflow')
+# Create the ai_utility blueprint
+ai_utility_bp = Blueprint('ai_utility', __name__, url_prefix='/ai-utility')
 
-# Define routes for the contentflow blueprint
-@contentflow_bp.route('/')
+# Define routes for the ai_utility blueprint
+@ai_utility_bp.route('/')
 def index():
-    """ContentFlow home page"""
-    return render_template('contentflow.html')
+    """AI Utility home page"""
+    return render_template('ai_utility.html')
 
-@contentflow_bp.route('/dashboard')
+@ai_utility_bp.route('/dashboard')
 def dashboard():
-    """ContentFlow dashboard page"""
-    return render_template('contentflow_dashboard.html')
+    """AI Utility dashboard page"""
+    return render_template('ai_utility_dashboard.html')
 
-@contentflow_bp.route('/analytics')
+@ai_utility_bp.route('/analytics')
 def analytics():
-    """ContentFlow analytics page"""
-    return render_template('contentflow_analytics.html')
+    """AI Utility analytics page"""
+    return render_template('ai_utility_analytics.html')
 
 # Create the metadata blueprint
 metadata_bp = Blueprint('metadata', __name__, url_prefix='/metadata')
@@ -127,7 +123,7 @@ SYSTEM_PROMPT_SYNTHESIS = """You are an organizational analyst. Extract key info
 Return the information in JSON format with these categories. Only include information that has been explicitly mentioned or can be directly inferred."""
 
 app.register_blueprint(auth)
-app.register_blueprint(contentflow_bp)
+app.register_blueprint(ai_utility_bp)
 app.register_blueprint(metadata_bp)
 
 # In-memory storage for active chats
@@ -253,12 +249,12 @@ def landing_page2():
 def select_platform(platform):
     session['platform'] = platform
     
-    if platform == 'mediamap':
+    if platform == 'mediamap' or platform == 'implement_ai':
         return redirect(url_for('mediamap_home'))
     elif platform == 'language':
         return redirect(url_for('translate_page'))
-    elif platform == 'contentflow':
-        return redirect(url_for('contentflow.index'))
+    elif platform == 'ai_utility' or platform == 'contentflow':
+        return redirect(url_for('ai_utility.index'))
     elif platform == 'training':
         return redirect(url_for('training_lab'))
     elif platform == 'store':
@@ -337,8 +333,8 @@ def logout():
 @app.route('/mediamap')
 @login_required
 def mediamap_home():
-    """AI Insights home page"""
-    session['platform'] = 'mediamap'
+    """Implement AI home page"""
+    session['platform'] = 'implement_ai'
     
     # Get organization info from the synthesize_org_info function
     response = synthesize_org_info()
@@ -346,32 +342,14 @@ def mediamap_home():
     
     return render_template('mediamap_home.html', active_page='dashboard', org_info=org_info)
 
-@app.route('/guardpass')
+@app.route('/ai-utility')
 @login_required
-def guardpass():
-    """GuardPass home page with platform check"""
-    if session.get('platform') != 'guardpass':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
-    return render_template('guardpass.html', hide_right_sidebar=True)
-
-@app.route('/contentflow')
-@login_required
-def contentflow():
-    """ContentFlow home page"""
+def ai_utility():
+    """AI Utility home page"""
     # Set the platform in session
-    session['platform'] = 'contentflow'
-    # Render the complete contentflow template
-    return render_template('contentflow.html', hide_right_sidebar=True)
-
-@app.route('/access-controls')
-@login_required
-def access_controls():
-    """Access Controls page for GuardPass"""
-    if session.get('platform') != 'guardpass':
-        flash('Access denied. Please select the correct platform.', 'danger')
-        return redirect(url_for('logout'))
-    return render_template('access_controls.html', hide_right_sidebar=True)
+    session['platform'] = 'ai_utility'
+    # Render the complete ai_utility template
+    return render_template('ai_utility.html', hide_right_sidebar=True)
 
 @app.route('/analyze', methods=['POST'])
 @login_required
@@ -1417,9 +1395,9 @@ def toggle_admin(user_id):
 @app.route('/content-calendar')
 @login_required
 def content_calendar():
-    """Content Calendar page for ContentFlow"""
+    """Content Calendar page for AI Utility"""
     # Set the platform in session
-    session['platform'] = 'contentflow'
+    session['platform'] = 'ai_utility'
     return render_template('content_calendar.html', hide_right_sidebar=True)
 
 @app.cli.command("reset-db")
@@ -1518,275 +1496,6 @@ with app.app_context():
         except Exception as e:
             db.session.rollback()
             print(f"Error creating admin user: {str(e)}")
-
-# Create directory for storing face embeddings if it doesn't exist
-os.makedirs('face_db', exist_ok=True)
-
-# Initialize InsightFace model
-print("Initializing InsightFace model...")
-face_app = FaceAnalysis(providers=['CPUExecutionProvider'])
-face_app.prepare(ctx_id=0, det_size=(640, 640))
-print("InsightFace model loaded successfully")
-
-def get_face_embedding(img_data):
-    """Convert an image to a face embedding vector using InsightFace"""
-    try:
-        print("Starting face embedding extraction with InsightFace...")
-        
-        # Convert bytes to numpy array/image
-        if isinstance(img_data, bytes):
-            print(f"Converting {len(img_data)} bytes to image")
-            nparr = np.frombuffer(img_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            # Convert BGR to RGB (InsightFace expects RGB)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        else:
-            print(f"Using provided numpy array")
-            img = img_data
-            
-        print(f"Image shape: {img.shape}")
-        
-        # Detect and analyze faces
-        print("Detecting faces with InsightFace...")
-        faces = face_app.get(img)
-        
-        if len(faces) == 0:
-            print("No faces detected in the image")
-            return None, "No face detected"
-        
-        print(f"Detected {len(faces)} faces")
-        
-        if len(faces) > 1:
-            print("Multiple faces detected, using the largest one")
-            # Find the face with the largest bounding box area
-            areas = [(face.bbox[2] - face.bbox[0]) * (face.bbox[3] - face.bbox[1]) for face in faces]
-            largest_face_idx = np.argmax(areas)
-            face = faces[largest_face_idx]
-        else:
-            face = faces[0]
-        
-        # Get embedding directly from the face object
-        print("Getting embedding vector...")
-        embedding = face.embedding
-        print(f"Embedding shape: {embedding.shape}")
-        
-        return embedding, None
-    
-    except Exception as e:
-        print(f"Exception in get_face_embedding: {str(e)}")
-        print(traceback.format_exc())
-        return None, str(e)
-
-def identify_face(img_data, threshold=0.5):  # Lower threshold for ArcFace
-    print("--- Starting face identification with ArcFace ---")
-    # Get embedding for the current face
-    print("Attempting to get face embedding...")
-    current_embedding, error = get_face_embedding(img_data)
-    
-    if error:
-        print(f"ERROR in get_face_embedding: {error}")
-        return None, error
-    
-    print(f"Successfully got embedding, shape: {current_embedding.shape if current_embedding is not None else 'None'}")
-    
-    # Load all stored embeddings
-    max_similarity = 0
-    best_match = None
-    
-    # Check if face_db directory exists
-    face_db_path = os.path.join(os.getcwd(), 'face_db')
-    print(f"Looking for faces in: {face_db_path}")
-    
-    if not os.path.exists(face_db_path):
-        print("face_db directory doesn't exist!")
-        os.makedirs(face_db_path, exist_ok=True)
-        return None, "No faces registered (directory missing)"
-    
-    # Load mapping of user_ids to names
-    name_mapping = {}
-    registry_path = os.path.join(face_db_path, 'face_registry.txt')
-    print(f"Checking registry at: {registry_path}")
-    
-    try:
-        if os.path.exists(registry_path):
-            with open(registry_path, 'r') as f:
-                for line in f:
-                    parts = line.strip().split('|')
-                    if len(parts) >= 2:
-                        name_mapping[parts[0]] = parts[1]
-            print(f"Loaded name mappings: {name_mapping}")
-        else:
-            print("Registry file doesn't exist")
-    except Exception as e:
-        print(f"Error reading registry: {str(e)}")
-        print(traceback.format_exc())
-    
-    # List all files in face_db
-    npy_files = [f for f in os.listdir(face_db_path) if f.endswith('.npy')]
-    print(f"Found {len(npy_files)} .npy files: {npy_files}")
-    
-    if not npy_files:
-        return None, "No faces registered (no .npy files)"
-    
-    # Check each registered face
-    for filename in npy_files:
-        user_id = filename.split('.')[0]
-        try:
-            embedding_path = os.path.join(face_db_path, filename)
-            print(f"Loading embedding from: {embedding_path}")
-            embedding = np.load(embedding_path)
-
-            # Calculate similarity - cosine similarity
-            similarity = np.dot(current_embedding, embedding) / (
-                np.linalg.norm(current_embedding) * np.linalg.norm(embedding)
-            )
-
-            print(f"Similarity with {user_id}: {similarity}")
-            
-            # Keep track of best match
-            if similarity > max_similarity:
-                max_similarity = similarity
-                best_match = user_id
-                print(f"New best match: {user_id} with similarity {similarity}")
-        except Exception as e:
-            print(f"Error processing {filename}: {str(e)}")
-            print(traceback.format_exc())
-            continue
-    
-    # Return best match if above threshold
-    if max_similarity >= threshold:
-        name = name_mapping.get(best_match, f"Unknown-{best_match}")
-        print(f"Match found: {name} with confidence {max_similarity}")
-        return {
-            "user_id": best_match,
-            "name": name,
-            "confidence": float(max_similarity)
-        }, None
-    else:
-        print(f"No match found above threshold. Best: {max_similarity:.2f}")
-        return None, f"No match found (best similarity: {max_similarity:.2f})"
-
-# Route for face recognition
-@app.route('/guardpass/setup-face-recognition', methods=['GET', 'POST'])
-@login_required
-def setup_face_recognition():
-    if request.method == 'POST':
-        # Check if the post request has the file part
-        if 'face_image' not in request.files:
-            flash('No file part', 'danger')
-            return redirect(request.url)
-        
-        file = request.files['face_image']
-        name = request.form.get('name', current_user.username)
-        
-        # If user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file', 'danger')
-            return redirect(request.url)
-        
-        # Process the image
-        try:
-            img_data = file.read()
-            success, error = register_face(name, current_user.id, img_data)
-            
-            if success:
-                flash('Face registered successfully!', 'success')
-                # Update user profile
-                current_user.has_face_id = True
-                db.session.commit()
-            else:
-                flash(f'Error registering face: {error}', 'danger')
-        
-        except Exception as e:
-            flash(f'Error processing image: {str(e)}', 'danger')
-        
-        return redirect(url_for('guardpass'))
-    
-    return render_template('setup_face_recognition.html')
-
-# Route for scanning and identifying faces
-@app.route('/guardpass/scan-face', methods=['GET', 'POST'])
-@login_required
-def scan_face():
-    error_message = None
-    debug_info = None
-    
-    if request.method == 'POST':
-        # Check if the post request has the file part
-        if 'face_image' not in request.files:
-            flash('No image was provided', 'danger')
-            return redirect(request.url)
-        
-        file = request.files['face_image']
-        
-        # If user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file', 'danger')
-            return redirect(request.url)
-        
-        # Process the image
-        try:
-            # Print debug info
-            print(f"Processing image: {file.filename}, size: {file.content_length} bytes")
-            
-            # Read the file
-            img_data = file.read()
-            print(f"Image data size: {len(img_data)} bytes")
-            
-            # Store debug information
-            debug_info = {
-                "filename": file.filename,
-                "file_size": len(img_data),
-                "content_type": file.content_type
-            }
-            
-            # Check if any faces are registered
-            face_dir = os.path.join(os.getcwd(), 'face_db')
-            if not os.path.exists(face_dir):
-                os.makedirs(face_dir, exist_ok=True)
-            
-            npy_files = [f for f in os.listdir(face_dir) if f.endswith('.npy')]
-            if not npy_files:
-                error_message = 'No faces registered in the database. Please register at least one face first.'
-                flash(error_message, 'warning')
-                return render_template('scan_face.html', result=None, error_message=error_message, debug_info=debug_info)
-            
-            # Try to identify the face
-            try:
-                # This is where problems might be occurring
-                person, error = identify_face(img_data)
-                
-                if person:
-                    # Log the identification
-                    log_path = os.path.join(face_dir, 'identification_log.txt')
-                    with open(log_path, 'a') as f:
-                        f.write(f"{datetime.now().isoformat()}|{person['user_id']}|{person['name']}|{person['confidence']}\n")
-                    
-                    flash(f"Identified: {person['name']} (Confidence: {person['confidence']:.2f})", 'success')
-                    return render_template('scan_face.html', result=person, debug_info=debug_info)
-                else:
-                    error_message = f'No match found: {error}'
-                    flash(error_message, 'warning')
-            except Exception as e:
-                import traceback
-                error_traceback = traceback.format_exc()
-                error_message = f"Error in identify_face: {str(e)}\n{error_traceback}"
-                print(error_message)
-                flash(f'Error identifying face: {str(e)}', 'danger')
-        
-        except Exception as e:
-            import traceback
-            error_traceback = traceback.format_exc()
-            error_message = f"Error processing image: {str(e)}\n{error_traceback}"
-            print(error_message)
-            flash(f'Error processing image: {str(e)}', 'danger')
-        
-        # Return template with error instead of redirecting
-        return render_template('scan_face.html', result=None, error_message=error_message, debug_info=debug_info)
-    
-    return render_template('scan_face.html', result=None)
 
 @app.route('/justice-ai')
 def justice_ai():
