@@ -255,9 +255,9 @@ def select_platform(platform):
     elif platform == 'language':
         return redirect(url_for('translate_page'))
     elif platform == 'contentflow':
-        return redirect(url_for('contentflow_bp.index'))
+        return redirect(url_for('contentflow.index'))
     elif platform == 'training':
-        return redirect(url_for('training_home'))
+        return redirect(url_for('training_lab'))
     elif platform == 'store':
         return redirect(url_for('ai_store'))
     else:
@@ -322,10 +322,14 @@ def logout():
 @app.route('/mediamap')
 @login_required
 def mediamap_home():
-    """MediaMap home page"""
-    # Set the platform in session if not already set
+    """AI Insights home page"""
     session['platform'] = 'mediamap'
-    return render_template('index.html')
+    
+    # Get organization info from the synthesize_org_info function
+    response = synthesize_org_info()
+    org_info = response.get_json() if hasattr(response, 'get_json') else None
+    
+    return render_template('mediamap_home.html', active_page='dashboard', org_info=org_info)
 
 @app.route('/guardpass')
 @login_required

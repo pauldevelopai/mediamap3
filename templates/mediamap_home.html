@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}AI Insights - MediaMap AI{% endblock %}
+
+{% set active_section = 'mediamap' %}
+{% set active_page = 'dashboard' %}
+
+{% block banner_title %}AI Insights{% endblock %}
+{% block banner_subtitle %}Content analysis and media strategy platform{% endblock %}
+
+{% block additional_styles %}
+.insights-card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+.insights-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+.insights-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+.stats-card {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+.recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.activity-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.activity-item:last-child {
+    border-bottom: none;
+}
+.activity-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+{% endblock %}
+
+{% block main_content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="mb-3">Dashboard</h2>
+        <p class="text-muted">Welcome to AI Insights. Analyze your content and get strategic recommendations.</p>
+    </div>
+</div>
+
+<!-- Organization Info Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Organization Overview</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>{{ org_info.Organization_Overview if org_info and org_info.Organization_Overview else "Your Organization" }}</h4>
+                        <p>Use AI Insights to analyze your content and develop effective media strategies.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Key Projects</h5>
+                        <ul class="list-group list-group-flush">
+                            {% if org_info and org_info.Key_Projects %}
+                                {% for project in org_info.Key_Projects %}
+                                    <li class="list-group-item px-0">{{ project }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="list-group-item px-0">No projects available</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stat-value text-primary">12</div>
+            <div class="stat-label">Media Items Analyzed</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stat-value text-success">85%</div>
+            <div class="stat-label">Content Engagement</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stat-value text-info">24</div>
+            <div class="stat-label">AI Interactions</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stat-value text-warning">8</div>
+            <div class="stat-label">Strategic Recommendations</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h3 class="mb-3">Quick Actions</h3>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card insights-card">
+            <div class="card-body text-center">
+                <div class="insights-icon text-primary">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <h4 class="card-title">Analyze Media</h4>
+                <p class="card-text">Upload or link to media content for AI analysis</p>
+                <a href="#" class="btn btn-primary">Start Analysis</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card insights-card">
+            <div class="card-body text-center">
+                <div class="insights-icon text-success">
+                    <i class="bi bi-chat-dots"></i>
+                </div>
+                <h4 class="card-title">AI Chat</h4>
+                <p class="card-text">Get insights and answers through conversation</p>
+                <a href="{{ url_for('get_chats') }}" class="btn btn-success">Start Chat</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card insights-card">
+            <div class="card-body text-center">
+                <div class="insights-icon text-info">
+                    <i class="bi bi-lightbulb"></i>
+                </div>
+                <h4 class="card-title">Generate Insights</h4>
+                <p class="card-text">Get strategic recommendations for your content</p>
+                <a href="{{ url_for('generate_insights') }}" class="btn btn-info">Get Insights</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Recent Activity</h3>
+                <div class="recent-activity">
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>Media Analysis</strong>
+                                <p class="mb-0">Analyzed TikTok video performance</p>
+                            </div>
+                            <div class="activity-time">3 days ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>AI Chat</strong>
+                                <p class="mb-0">Discussed content strategy</p>
+                            </div>
+                            <div class="activity-time">5 days ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>Insight Generated</strong>
+                                <p class="mb-0">Created audience engagement report</p>
+                            </div>
+                            <div class="activity-time">1 week ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
